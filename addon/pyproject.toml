@@ -1,0 +1,27 @@
+[project]
+name = "addon"
+version = "0.1.0"
+description = "Add your description here"
+# readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "arize-phoenix>=7.9.2",
+    "fastapi>=0.104.0",
+    "litellm[proxy]>=1.60.2",
+    "mcp @ git+https://github.com/modelcontextprotocol/python-sdk.git@f10665d", # TODO: pin to >1.2.1 when released
+    "openinference-instrumentation-smolagents>=0.1.2",
+    "opentelemetry-exporter-otlp>=1.29.0",
+    "opentelemetry-sdk>=1.29.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings==2.7.1",
+    "smolagents @ git+https://github.com/huggingface/smolagents.git@d74837b",
+    # "smolagents>=1.8.0",
+    "uvicorn>=0.24.0",
+]
+
+[dependency-groups]
+dev = [
+    "debugpy>=1.8.12",
+    "huggingface-hub[cli]>=0.28.0",
+    "ipykernel>=6.29.5",
+]

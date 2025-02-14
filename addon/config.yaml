@@ -1,0 +1,15 @@
+name: "Home Agent"
+version: "1.0.0"
+slug: "home_agent"
+description: "AI agent for Home Assistant"
+url: "https://github.com/taha-yassine/home_agent"
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: application
+boot: auto
+ports:
+  8000/tcp: 8000 

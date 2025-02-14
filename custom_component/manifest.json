@@ -1,0 +1,17 @@
+{
+  "domain": "home_agent",
+  "name": "Home Agent",
+  "codeowners": [
+    "@taha-yassine"
+  ],
+  "config_flow": true,
+  "dependencies": ["homeassistant", "conversation"],
+  "documentation": "https://www.home-assistant.io/integrations/home_agent",
+  "homekit": {},
+  "iot_class": "local_polling",
+  "requirements": [],
+  "ssdp": [],
+  "zeroconf": [],
+  "version": "0.0.1",
+  "integration_type": "service"
+}
