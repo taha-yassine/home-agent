@@ -5,17 +5,15 @@ description = "Add your description here"
 # readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "arize-phoenix>=7.9.2",
+    "arize-phoenix>=8.13.0",
+    "arize-phoenix-otel>=0.8.0",
     "fastapi>=0.104.0",
     "litellm[proxy]>=1.60.2",
-    "mcp @ git+https://github.com/modelcontextprotocol/python-sdk.git@f10665d", # TODO: pin to >1.2.1 when released
-    "openinference-instrumentation-smolagents>=0.1.2",
-    "opentelemetry-exporter-otlp>=1.29.0",
-    "opentelemetry-sdk>=1.29.0",
+    "mcp>1.2.1",
+    "openai-agents>=0.0.4",
+    "openinference-instrumentation-openai-agents>=0.1.1",
     "pydantic>=2.0.0",
     "pydantic-settings==2.7.1",
-    "smolagents @ git+https://github.com/huggingface/smolagents.git@d74837b",
-    # "smolagents>=1.8.0",
     "uvicorn>=0.24.0",
 ]
 
