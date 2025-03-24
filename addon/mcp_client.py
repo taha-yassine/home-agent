@@ -11,38 +11,38 @@ from exceptions import MCPConnectionError, MCPToolError, MCPInitializationError
 _LOGGER = logging.getLogger('uvicorn.error')
 
 class MCPClient:
-    def __init__(self):
-        """Initialize MCP Client."""
-        self.session: ClientSession | None = None
-        self.tools: Dict[str, Tool] = {}
-        self.exit_stack = AsyncExitStack()
-        self._token: str | None = None
-
-    async def initialize(self, url: str, token: str | None = None) -> None:
-        """Initialize the server connection.
-
+    def __init__(self, url: str, token: str | None = None):
+        """Initialize MCP Client.
+        
         Args:
             url: URL of the MCP server
             token: Optional bearer token for authentication
         """
+        self.url = url
         self._token = token
+        self.session: ClientSession | None = None
+        self.tools: Dict[str, Tool] = {}
+        self.exit_stack = AsyncExitStack()
+
+    async def initialize(self) -> None:
+        """Initialize the server connection."""
         headers = {}
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
+        if self._token:
+            headers["Authorization"] = f"Bearer {self._token}"
 
         try:
             _LOGGER.info("Connecting to MCP server...")
             
             # Setup SSE connection using exit stack
             streams = await self.exit_stack.enter_async_context(
-                sse_client(url=url, headers=headers)
+                sse_client(url=self.url, headers=headers)
             )
             self.session = await self.exit_stack.enter_async_context(
                 ClientSession(*streams)
             )
             
             await self.session.initialize()
-            _LOGGER.info(f"Connected to MCP server {url}")
+            _LOGGER.info(f"Connected to MCP server {self.url}")
 
         except httpx.HTTPError as err:
             await self.cleanup()

@@ -3,10 +3,10 @@ if os.getenv("DEBUGPY", "false").lower() == "true":
     import debugpy
     debugpy.listen(("0.0.0.0", 5678))
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 import logging
 from contextlib import asynccontextmanager
 
@@ -15,13 +15,13 @@ from agents import (
     FunctionTool,
     RunContextWrapper,
     Agent,
-    set_default_openai_client,
     Runner,
-    set_trace_processors, set_default_openai_api    
+    set_trace_processors,
+    OpenAIChatCompletionsModel
 )
 
 from mcp_client import MCPClient
-from tools import setup_tools
+from tools import load_tools
 
 
 # TODO: Set up
@@ -32,6 +32,7 @@ from tools import setup_tools
 _LOGGER = logging.getLogger('uvicorn.error')
 
 class Settings(BaseSettings):
+    """Application settings."""
     llm_server_url: str # URL of the LLM inference server
     llm_server_api_key: str # API key for the LLM inference server
     model_id: str # ID of the LLM model to use
@@ -46,71 +47,124 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-settings = Settings() # pyright: ignore
-openai_client = AsyncOpenAI(
-    base_url=settings.llm_server_url,
-    api_key=settings.llm_server_api_key,
-)
-mcp_client = MCPClient()
-agent: Optional[Agent] = None
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    try:
-        set_default_openai_client(
-            client=openai_client
-        )
+class AppState:
+    """
+    Application state that holds shared resources.
+    """
+    def __init__(self):
+        self._settings: Optional[Settings] = None
+        self._openai_client: Optional[AsyncOpenAI] = None
+        self._mcp_client: Optional[MCPClient] = None
 
-        # Remove the default OpenAI processor
-        set_trace_processors([])
+    @property
+    def settings(self) -> Settings:
+        if self._settings is None:
+            self._settings = Settings() # pyright: ignore
+        return self._settings
 
-        set_default_openai_api("chat_completions")
+    @property
+    def openai_client(self) -> AsyncOpenAI:
+        if self._openai_client is None:
+            self._openai_client = AsyncOpenAI(
+                base_url=self.settings.llm_server_url,
+                api_key=self.settings.llm_server_api_key,
+            )
+        return self._openai_client
 
-        await mcp_client.initialize(
-            url=settings.ha_mcp_url,
-            token=settings.ha_api_key
-        )
-        
-        global agent
+    @property
+    def mcp_client(self) -> MCPClient:
+        if self._mcp_client is None:
+            self._mcp_client = MCPClient(
+                url=self.settings.ha_mcp_url,
+                token=self.settings.ha_api_key
+            )
+        return self._mcp_client
 
-        tools: list[FunctionTool] = await setup_tools(mcp_client)
-        
-        agent = Agent(
-            name="Home Agent",
+
+app_state = AppState()
+
+# Dependencies
+def get_settings() -> Settings:
+    return app_state.settings
+
+
+def get_openai_client() -> AsyncOpenAI:
+    return app_state.openai_client
+
+
+def get_mcp_client() -> MCPClient:
+    return app_state.mcp_client
+
+
+async def get_tools() -> list[FunctionTool]:
+    return await load_tools(app_state.mcp_client)
+
+
+def get_agent(
+        openai_client: AsyncOpenAI = Depends(get_openai_client),
+        settings: Settings = Depends(get_settings),
+        tools: list[FunctionTool] = Depends(get_tools)
+    ) -> Agent:
+    return Agent(
+        name="Home Agent",
+        model=OpenAIChatCompletionsModel(
             model=settings.model_id,
-            instructions=construct_prompt,
-            tools=tools
-        )
-        
-        yield
-    finally:
-        await mcp_client.cleanup()
+            openai_client=openai_client
+        ),
+        instructions=construct_prompt,
+        tools=tools
+    )
 
-app = FastAPI(lifespan=lifespan)
-
-# TODO: Organize better
 def construct_prompt(ctx_wrapper: RunContextWrapper[Any], agent: Agent) -> str:
+    """Construct prompt for the agent."""
     instructions = "You are a helpful assistant that helps with tasks around the home. You will be given instructions that you are asked to follow. You can use the tools provided to you to control devices in the home in order to complete the task. When you have completed the task, you should respond with a summary of the task and the result."
 
     home_state = ctx_wrapper.context["context"]
 
     return instructions + "\n\n" + str(home_state)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        # Set up OpenAI client in Agents
+        set_trace_processors([])
+        
+        # Initialize MCP client
+        await app_state.mcp_client.initialize()
+        
+        yield
+    finally:
+        # Clean up resources
+        if app_state.mcp_client:
+            await app_state.mcp_client.cleanup()
+            # app_state.mcp_client = None
+
+
+app = FastAPI(lifespan=lifespan)
+
+
 class ConversationRequest(BaseModel):
+    """Model for conversation request."""
     text: str
     conversation_id: str
     language: str
-    context: dict | None = None
-    llm_api: dict[str, Any] | None = None
+    context: Dict[str, Any] | None = None
+    llm_api: Dict[str, Any] | None = None
+
 
 class ConversationResponse(BaseModel):
+    """Model for conversation response."""
     response: str
 
+
 @app.post("/api/conversation", response_model=ConversationResponse)
-async def process_conversation(request: ConversationRequest):
-    if not agent:
-        raise RuntimeError("Agent not initialized")
-        
+async def process_conversation(
+    request: ConversationRequest,
+    agent: Agent = Depends(get_agent)
+):
+    """Process a conversation with the agent."""
     full_context = {
         "conversation_id": request.conversation_id,
         "language": request.language
@@ -134,28 +188,32 @@ async def process_conversation(request: ConversationRequest):
             response=f"I apologize, but I encountered an error: {str(e)}"
         )
 
+
 @app.get("/api/health")
 async def health_check():
     """Return health status of the API."""
-    return {"status": "ok"} 
+    return {"status": "ok"}
+
 
 @app.get("/api/config")
-async def get_config():
+async def get_config(settings: Settings = Depends(get_settings)):
     """Return current configuration."""
     return {
         "llm_server_url": settings.llm_server_url
-    } 
-
-@app.get("/api/tools")
-async def list_tools():
-    """Return list of available MCP tools and last update time."""
-    return {
-        "tools": list(mcp_client.tools.keys()),
-        "last_update": mcp_client.last_update.isoformat() if mcp_client.last_update else None
     }
 
+
+@app.get("/api/tools")
+async def list_tools(mcp_client: MCPClient = Depends(get_mcp_client)):
+    """Return list of available MCP tools."""
+    return mcp_client.tools
+
+
 @app.get("/api/tools/{tool_name}")
-async def get_tool(tool_name: str):
+async def get_tool(
+    tool_name: str, 
+    mcp_client: MCPClient = Depends(get_mcp_client)
+):
     """Get details about a specific tool."""
     tool = mcp_client.get_tool(tool_name)
     if not tool:

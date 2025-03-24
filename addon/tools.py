@@ -39,7 +39,9 @@ class HASlots(BaseModel):
             raise ValueError("Invalid parameter combination")
         return self
 
-async def setup_tools(mcp_client: MCPClient) -> list[FunctionTool]:
+async def load_tools(mcp_client: MCPClient) -> list[FunctionTool]:
+    """Load tools from MCP client and convert them to OpenAI `FunctionTool`s."""
+
     await mcp_client.load_tools()
 
     tools = mcp_client.tools
