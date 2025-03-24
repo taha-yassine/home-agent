@@ -1,5 +1,4 @@
 import os
-import json
 if os.getenv("DEBUGPY", "false").lower() == "true":
     import debugpy
     debugpy.listen(("0.0.0.0", 5678))
@@ -7,12 +6,23 @@ if os.getenv("DEBUGPY", "false").lower() == "true":
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Any, Optional, Callable, Awaitable
+from typing import Any, Optional
 import logging
 from contextlib import asynccontextmanager
-from mcp_client import MCPClient, Tool
-from agents import FunctionTool, RunContextWrapper, Agent, set_default_openai_client, Runner, set_trace_processors, set_default_openai_api
+
 from openai import AsyncOpenAI, DefaultAsyncHttpxClient
+from agents import (
+    FunctionTool,
+    RunContextWrapper,
+    Agent,
+    set_default_openai_client,
+    Runner,
+    set_trace_processors, set_default_openai_api    
+)
+
+from mcp_client import MCPClient
+from tools import setup_tools
+
 
 # TODO: Set up
 # OpenRouter metadata
@@ -36,7 +46,7 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-settings = Settings()
+settings = Settings() # pyright: ignore
 openai_client = AsyncOpenAI(
     base_url=settings.llm_server_url,
     api_key=settings.llm_server_api_key,
@@ -63,24 +73,7 @@ async def lifespan(app: FastAPI):
         
         global agent
 
-        def construct_tool_call(tool: Tool) ->   Callable[[RunContextWrapper[Any], str], Awaitable[str]]:
-            async def call_tool(ctx_wrapper: RunContextWrapper[Any], args: str) -> str:
-                """Call an MCP tool asynchronously."""
-                args_dict = json.loads(args)
-                result = await mcp_client.call_tool(tool.name, args_dict)
-                return result.content
-            
-            return call_tool
-        
-        tools : list[FunctionTool] = [
-            FunctionTool(
-                name=tool.name,
-                description=tool.description,
-                params_json_schema=tool.inputSchema,
-                on_invoke_tool=construct_tool_call(tool)
-            )
-            for tool in mcp_client.tools.values()
-        ]
+        tools: list[FunctionTool] = await setup_tools(mcp_client)
         
         agent = Agent(
             name="Home Agent",
