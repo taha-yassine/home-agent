@@ -22,4 +22,5 @@ dev = [
     "debugpy>=1.8.12",
     "huggingface-hub[cli]>=0.28.0",
     "ipykernel>=6.29.5",
+    "pytest>=8.3.5",
 ]
