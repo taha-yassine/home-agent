@@ -55,7 +55,7 @@ async def load_tools(mcp_client: MCPClient) -> list[FunctionTool]:
         FunctionTool(
             name=tool_name,
             description=tool.description,
-            params_json_schema=tool.inputSchema,
+            params_json_schema=tool.inputSchema if tool.inputSchema["properties"] else {}, # Certain providers don't like it when the inputSchema is empty, i.e., {'type': 'object', 'properties': {}}
             on_invoke_tool=partial(_call_tool, tool_name)
         )
         for tool_name, tool in tools.items()
