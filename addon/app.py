@@ -9,8 +9,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Any, Dict, Optional
 import logging
 from contextlib import asynccontextmanager
+import httpx
 
-from openai import AsyncOpenAI, DefaultAsyncHttpxClient
+from openai import (
+    AsyncOpenAI,
+    DefaultAsyncHttpxClient,
+    APIStatusError
+)
 from agents import (
     FunctionTool,
     RunContextWrapper,
@@ -138,6 +143,28 @@ async def lifespan(app: FastAPI):
         
         # Initialize MCP client
         await app_state.mcp_client.initialize()
+
+        # Check LLM backend type
+        openai_client = get_openai_client()
+        try:
+            # Remove the /v1 from the base URL
+            backend_url = str(openai_client.base_url).rstrip('/v1').rstrip('/')
+            # Reuse the existing OpenAI client
+            response = await openai_client.with_options(base_url=backend_url).get(
+                "/health",
+                cast_to=httpx.Response,
+                options={}
+            )
+            response.raise_for_status()
+            
+            backend_name = response.headers.get("server")
+            if backend_name.lower() == "llama.cpp":
+                _LOGGER.info("LLM backend: llama.cpp")
+
+        except (httpx.RequestError, APIStatusError) as e:
+            _LOGGER.warning(f"Could not connect to LLM backend at {backend_url}: {e}")
+        except Exception as e:
+            _LOGGER.error(f"Error during LLM backend check: {e}")
         
         yield
     finally:
