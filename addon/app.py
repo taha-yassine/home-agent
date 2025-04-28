@@ -126,7 +126,7 @@ def get_agent(
         tools=tools
     )
 
-def construct_prompt(ctx_wrapper: RunContextWrapper[Any], agent: Agent) -> str:
+def construct_prompt(ctx_wrapper: RunContextWrapper[Any], agent: Agent | None) -> str:
     """Construct prompt for the agent."""
     instructions = "You are a helpful assistant that helps with tasks around the home. You will be given instructions that you are asked to follow. You can use the tools provided to you to control devices in the home in order to complete the task. When you have completed the task, you should respond with a summary of the task and the result."
 
@@ -144,6 +144,7 @@ async def lifespan(app: FastAPI):
         # Initialize MCP client
         await app_state.mcp_client.initialize()
 
+        # Warm up the KV cache if llama.cpp
         # Check LLM backend type
         openai_client = get_openai_client()
         try:
@@ -160,6 +161,34 @@ async def lifespan(app: FastAPI):
             backend_name = response.headers.get("server")
             if backend_name.lower() == "llama.cpp":
                 _LOGGER.info("LLM backend: llama.cpp")
+
+                _LOGGER.info("Warming up KV cache...")
+
+                await get_tools()
+                home_state = (await get_mcp_client().call_tool("GetLiveContext", {})).content[0].text # type: ignore
+                context = { "context": home_state }
+                prompt = construct_prompt(RunContextWrapper(context=context), None)
+
+                try:
+                    warmup_response = await openai_client.chat.completions.create(
+                        model="whatever",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": prompt
+                            },
+                            # Adding user message to load the corresponding special tokens
+                            # "content" can't be empty
+                            {
+                                "role": "user",
+                                "content": " "
+                            }
+                        ],
+                        max_tokens=0 # Still generates 1 token. Good enough.
+                    )
+                    _LOGGER.info(f"Warmup response: {warmup_response}")
+                except Exception as warmup_err:
+                    _LOGGER.error(f"Failed to warm up llama.cpp: {warmup_err}")
 
         except (httpx.RequestError, APIStatusError) as e:
             _LOGGER.warning(f"Could not connect to LLM backend at {backend_url}: {e}")
