@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     """Application settings."""
     llm_server_url: str # URL of the LLM inference server
     llm_server_api_key: str # API key for the LLM inference server
+    llm_server_proxy: str | None = None # Proxy for the LLM inference server
     model_id: str # ID of the LLM model to use
     ha_mcp_url: str  # Home Assistant URL of the MCP server
     ha_api_key: str  # Bearer token for Home Assistant authentication
@@ -69,6 +70,10 @@ class AppState:
             self._openai_client = AsyncOpenAI(
                 base_url=self.settings.llm_server_url,
                 api_key=self.settings.llm_server_api_key,
+                http_client=DefaultAsyncHttpxClient(
+                    proxy=self.settings.llm_server_proxy,
+                    verify=False
+                )
             )
         return self._openai_client
 
