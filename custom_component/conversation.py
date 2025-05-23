@@ -71,9 +71,12 @@ class HomeAgentConversationEntity(
     def __init__(self, entry: ConfigEntry) -> None:
         """Initialize the agent."""
         self.entry = entry
-        self._history = {}
         self._attr_name = entry.title
         self._attr_unique_id = entry.entry_id
+        if self.entry.options.get(CONF_LLM_HASS_API):
+            self._attr_supported_features = (
+                conversation.ConversationEntityFeature.CONTROL
+            )
 
     async def async_added_to_hass(self) -> None:
         """When entity is added to Home Assistant."""
