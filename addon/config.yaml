@@ -1,15 +1,22 @@
 name: "Home Agent"
 version: "1.0.0"
 slug: "home_agent"
+init: false
 description: "AI agent for Home Assistant"
 url: "https://github.com/taha-yassine/home_agent"
 arch:
   - aarch64
   - amd64
-  - armhf
-  - armv7
-  - i386
 startup: application
 boot: auto
+homeassistant_api: true
 ports:
-  8000/tcp: 8000 
+  8000/tcp: 8000
+options:
+  llm_server_url: ""
+  llm_server_api_key: ""
+  llm_server_proxy: ""
+schema:
+  llm_server_url: "url?"
+  llm_server_api_key: "str?"
+  llm_server_proxy: "url?"
