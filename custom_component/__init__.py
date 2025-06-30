@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 
-from .const import DOMAIN, CONF_ADDON_URL, DEFAULT_ADDON_URL
+from .const import DOMAIN, ADDON_URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     session = aiohttp.ClientSession()
 
     # Test connection to add-on
-    addon_url = entry.data.get(CONF_ADDON_URL, DEFAULT_ADDON_URL)
+    addon_url = entry.data.get(ADDON_URL)
     # try:
     #     async with session.get(f"{addon_url}/api/health") as response:
     #         if response.status != 200:

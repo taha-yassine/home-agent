@@ -1,11 +1,12 @@
 import os
 if os.getenv("DEBUGPY", "false").lower() == "true":
     import debugpy
-    debugpy.listen(("0.0.0.0", 5678))
+    debugpy.listen(("0.0.0.0", 6789))
 
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import load_dotenv
 from typing import Any, Dict, Optional
 import logging
 from contextlib import asynccontextmanager
@@ -25,8 +26,8 @@ from agents import (
     OpenAIChatCompletionsModel
 )
 
-from mcp_client import MCPClient
-from tools import load_tools
+from tools.hass_tools import get_tools as get_hass_tools
+
 
 
 # TODO: Set up
@@ -38,13 +39,13 @@ _LOGGER = logging.getLogger('uvicorn.error')
 
 class Settings(BaseSettings):
     """Application settings."""
+    app_env: str = "prod"
     llm_server_url: str # URL of the LLM inference server
     llm_server_api_key: str # API key for the LLM inference server
     llm_server_proxy: str | None = None # Proxy for the LLM inference server
-    model_id: str # ID of the LLM model to use
-    ha_mcp_url: str  # Home Assistant URL of the MCP server
+    model_id: str = "generic" # ID of the LLM model to use; some backends ignore this
+    ha_api_url: str  # Home Assistant API URL
     ha_api_key: str  # Bearer token for Home Assistant authentication
-    mcp_update_interval: int = 30  # Minutes between tool updates
     
     model_config = SettingsConfigDict(
         env_prefix="HOME_AGENT_",
@@ -61,12 +62,20 @@ class AppState:
     def __init__(self):
         self._settings: Optional[Settings] = None
         self._openai_client: Optional[AsyncOpenAI] = None
-        self._mcp_client: Optional[MCPClient] = None
+        self._hass_client: Optional[httpx.AsyncClient] = None
 
     @property
     def settings(self) -> Settings:
         if self._settings is None:
-            self._settings = Settings() # pyright: ignore
+            load_dotenv()
+            app_env = os.getenv("APP_ENV", "prod")
+            if app_env == "prod":
+                self._settings = Settings(
+                    ha_api_url="http://supervisor/core/api",
+                    ha_api_key=os.getenv("SUPERVISOR_TOKEN")
+                ) # pyright: ignore
+            else:
+                self._settings = Settings() # pyright: ignore
         return self._settings
 
     @property
@@ -83,13 +92,14 @@ class AppState:
         return self._openai_client
 
     @property
-    def mcp_client(self) -> MCPClient:
-        if self._mcp_client is None:
-            self._mcp_client = MCPClient(
-                url=self.settings.ha_mcp_url,
-                token=self.settings.ha_api_key
+    def hass_client(self) -> httpx.AsyncClient:
+        if self._hass_client is None:
+            self._hass_client = httpx.AsyncClient(
+                base_url=self.settings.ha_api_url,
+                headers={"Authorization": f"Bearer {self.settings.ha_api_key}"},
+                verify=False
             )
-        return self._mcp_client
+        return self._hass_client
 
 
 app_state = AppState()
@@ -103,12 +113,12 @@ def get_openai_client() -> AsyncOpenAI:
     return app_state.openai_client
 
 
-def get_mcp_client() -> MCPClient:
-    return app_state.mcp_client
+def get_hass_client() -> httpx.AsyncClient:
+    return app_state.hass_client
 
 
 async def get_tools() -> list[FunctionTool]:
-    return await load_tools(app_state.mcp_client)
+    return get_hass_tools()
 
 
 def get_agent(
@@ -123,14 +133,14 @@ def get_agent(
             openai_client=openai_client
         ),
         instructions=construct_prompt,
-        tools=tools
+        tools=tools # type: ignore
     )
 
 def construct_prompt(ctx_wrapper: RunContextWrapper[Any], agent: Agent | None) -> str:
     """Construct prompt for the agent."""
     instructions = "You are a helpful assistant that helps with tasks around the home. You will be given instructions that you are asked to follow. You can use the tools provided to you to control devices in the home in order to complete the task. When you have completed the task, you should respond with a summary of the task and the result."
 
-    home_state = ctx_wrapper.context["context"]
+    home_state = ctx_wrapper.context["home_state"]
 
     return instructions + "\n\n" + str(home_state)
 
@@ -141,66 +151,70 @@ async def lifespan(app: FastAPI):
         # Set up OpenAI client in Agents
         set_trace_processors([])
         
-        # Initialize MCP client
-        await app_state.mcp_client.initialize()
+        # Ping Home Assistant
+        try:
+            response = await get_hass_client().get("/")
+            response.raise_for_status()
+            _LOGGER.info(f"Home Assistant API is up and running")
+        except Exception as e:
+            _LOGGER.error(f"Failed to ping Home Assistant API: {e}")
+            raise HTTPException(status_code=500, detail="Home Assistant API is not responding")
 
         # Warm up the KV cache if llama.cpp
         # Check LLM backend type
-        openai_client = get_openai_client()
-        try:
-            # Remove the /v1 from the base URL
-            backend_url = str(openai_client.base_url).rstrip('/v1').rstrip('/')
-            # Reuse the existing OpenAI client
-            response = await openai_client.with_options(base_url=backend_url).get(
-                "/health",
-                cast_to=httpx.Response,
-                options={}
-            )
-            response.raise_for_status()
+        # openai_client = get_openai_client()
+        # try:
+        #     # Remove the /v1 from the base URL
+        #     backend_url = str(openai_client.base_url).rstrip('/v1').rstrip('/')
+        #     # Reuse the existing OpenAI client
+        #     response = await openai_client.with_options(base_url=backend_url).get(
+        #         "/health",
+        #         cast_to=httpx.Response,
+        #         options={}
+        #     )
+        #     response.raise_for_status()
             
-            backend_name = response.headers.get("server")
-            if backend_name.lower() == "llama.cpp":
-                _LOGGER.info("LLM backend: llama.cpp")
+        #     backend_name = response.headers.get("server")
+        #     if backend_name.lower() == "llama.cpp":
+        #         _LOGGER.info("LLM backend: llama.cpp")
 
-                _LOGGER.info("Warming up KV cache...")
+        #         _LOGGER.info("Warming up KV cache...")
 
-                await get_tools()
-                home_state = (await get_mcp_client().call_tool("GetLiveContext", {})).content[0].text # type: ignore
-                context = { "context": home_state }
-                prompt = construct_prompt(RunContextWrapper(context=context), None)
+        #         await get_tools()
+        #         home_state = (await get_mcp_client().call_tool("GetLiveContext", {})).content[0].text # type: ignore
+        #         context = { "context": home_state }
+        #         prompt = construct_prompt(RunContextWrapper(context=context), None)
 
-                try:
-                    warmup_response = await openai_client.chat.completions.create(
-                        model="whatever",
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": prompt
-                            },
-                            # Adding user message to load the corresponding special tokens
-                            # "content" can't be empty
-                            {
-                                "role": "user",
-                                "content": " "
-                            }
-                        ],
-                        max_tokens=0 # Still generates 1 token. Good enough.
-                    )
-                    _LOGGER.info(f"Warmup response: {warmup_response}")
-                except Exception as warmup_err:
-                    _LOGGER.error(f"Failed to warm up llama.cpp: {warmup_err}")
+        #         try:
+        #             warmup_response = await openai_client.chat.completions.create(
+        #                 model="whatever",
+        #                 messages=[
+        #                     {
+        #                         "role": "system",
+        #                         "content": prompt
+        #                     },
+        #                     # Adding user message to load the corresponding special tokens
+        #                     # "content" can't be empty
+        #                     {
+        #                         "role": "user",
+        #                         "content": " "
+        #                     }
+        #                 ],
+        #                 max_tokens=0 # Still generates 1 token. Good enough.
+        #             )
+        #             _LOGGER.info(f"Warmup response: {warmup_response}")
+        #         except Exception as warmup_err:
+        #             _LOGGER.error(f"Failed to warm up llama.cpp: {warmup_err}")
 
-        except (httpx.RequestError, APIStatusError) as e:
-            _LOGGER.warning(f"Could not connect to LLM backend at {backend_url}: {e}")
-        except Exception as e:
-            _LOGGER.error(f"Error during LLM backend check: {e}")
+        # except (httpx.RequestError, APIStatusError) as e:
+        #     _LOGGER.warning(f"Could not connect to LLM backend at {backend_url}: {e}")
+        # except Exception as e:
+        #     _LOGGER.error(f"Error during LLM backend check: {e}")
         
         yield
     finally:
         # Clean up resources
-        if app_state.mcp_client:
-            await app_state.mcp_client.cleanup()
-            # app_state.mcp_client = None
+        pass
 
 
 app = FastAPI(lifespan=lifespan)
@@ -211,9 +225,7 @@ class ConversationRequest(BaseModel):
     text: str
     conversation_id: str
     language: str
-    context: Dict[str, Any] | None = None
-    llm_api: Dict[str, Any] | None = None
-
+    home_state: Dict[str, Any]
 
 class ConversationResponse(BaseModel):
     """Model for conversation response."""
@@ -223,23 +235,25 @@ class ConversationResponse(BaseModel):
 @app.post("/api/conversation", response_model=ConversationResponse)
 async def process_conversation(
     request: ConversationRequest,
-    agent: Agent = Depends(get_agent)
+    agent: Agent = Depends(get_agent),
+    hass_client: httpx.AsyncClient = Depends(get_hass_client)
 ):
     """Process a conversation with the agent."""
-    full_context = {
+    context: Dict[str, Any] = {
         "conversation_id": request.conversation_id,
-        "language": request.language
+        "language": request.language,
+        "home_state": request.home_state
     }
-    if request.context:
-        full_context.update(request.context)
-    if request.llm_api:
-        full_context.update(request.llm_api)
         
+    context["hass_client"] = hass_client
+
+    input = request.text
+
     try:
         result = await Runner.run(
             starting_agent=agent,
-            input=request.text,
-            context=full_context
+            input=input,
+            context=context
         )
         return ConversationResponse(response=result.final_output)
         
@@ -262,21 +276,3 @@ async def get_config(settings: Settings = Depends(get_settings)):
     return {
         "llm_server_url": settings.llm_server_url
     }
-
-
-@app.get("/api/tools")
-async def list_tools(mcp_client: MCPClient = Depends(get_mcp_client)):
-    """Return list of available MCP tools."""
-    return mcp_client.tools
-
-
-@app.get("/api/tools/{tool_name}")
-async def get_tool(
-    tool_name: str, 
-    mcp_client: MCPClient = Depends(get_mcp_client)
-):
-    """Get details about a specific tool."""
-    tool = mcp_client.get_tool(tool_name)
-    if not tool:
-        raise HTTPException(status_code=404, detail=f"Tool '{tool_name}' not found")
-    return tool 

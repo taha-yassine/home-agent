@@ -24,20 +24,12 @@ from homeassistant.helpers.selector import (
     SelectOptionDict,
 )
 
-from .const import DOMAIN, CONF_SERVER_URL
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-STEP_USER_DATA_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_SERVER_URL): TextSelector(
-            TextSelectorConfig(type=TextSelectorType.URL)
-        ),
-    }
-)
 
-
-class ConfigFlow(ConfigFlow, domain=DOMAIN):
+class HomeAgentConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Home Agent."""
 
     VERSION = 1
@@ -46,31 +38,25 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the initial step."""
-        if user_input is not None:
-            return self.async_create_entry(
-                title="Home Agent",
-                data=user_input,
-            )
+        if self._async_current_entries():
+            return self.async_abort(reason="single_instance_allowed")
 
-        return self.async_show_form(
-            step_id="user",
-            data_schema=STEP_USER_DATA_SCHEMA,
-        )
+        return self.async_create_entry(title="Home Agent", data={})
 
     @staticmethod
     def async_get_options_flow(
         config_entry: ConfigEntry,
     ) -> OptionsFlow:
         """Create the options flow."""
-        return OptionsFlow(config_entry)
+        return HomeAgentOptionsFlow(config_entry)
 
 
-class OptionsFlow(OptionsFlow):
+class HomeAgentOptionsFlow(OptionsFlow):
     """Home Agent options flow."""
 
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
+        self.config_entry = config_entry  # TODO: deprecated, fix this
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None

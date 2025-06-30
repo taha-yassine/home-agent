@@ -28,8 +28,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import ulid
 
 from .const import (
-    CONF_ADDON_URL,
-    DEFAULT_ADDON_URL,
+    ADDON_URL,
     DEFAULT_MAX_HISTORY,
     DOMAIN,
     MAX_HISTORY_SECONDS,
@@ -99,8 +98,10 @@ class HomeAgentConversationEntity(
         """Return a list of supported languages."""
         return MATCH_ALL
 
-    async def async_process(
-        self, user_input: conversation.ConversationInput
+    async def _async_handle_message(
+        self,
+        user_input: conversation.ConversationInput,
+        chat_log: conversation.ChatLog,
     ) -> conversation.ConversationResult:
         """Process a sentence."""
         conversation_id = user_input.conversation_id or ulid.ulid_now()
@@ -109,61 +110,20 @@ class HomeAgentConversationEntity(
         # Get the client session from hass.data
         session: aiohttp.ClientSession = self.hass.data[DOMAIN][self.entry.entry_id]
 
-        # Initialize LLM API if configured
-        llm_api: llm.API | None = None
-        tools: list[dict[str, Any]] | None = None
-
-        if self.entry.options.get(CONF_LLM_HASS_API):
-            try:
-                llm_api = await llm.async_get_api(
-                    self.hass,
-                    self.entry.options[CONF_LLM_HASS_API],
-                    llm.LLMContext(
-                        platform=DOMAIN,
-                        context=user_input.context,
-                        user_prompt=user_input.text,
-                        language=user_input.language,
-                        assistant=conversation.DOMAIN,
-                        device_id=user_input.device_id,
-                    ),
-                )
-                exposed_entities = (
-                    llm._get_exposed_entities(self.hass, conversation.DOMAIN)  # noqa: SLF001
-                    if conversation.DOMAIN
-                    else None
-                )
-                context = _get_context(self.hass, llm_api.llm_context, exposed_entities)
-                tools = [
-                    _format_tool(tool, llm_api.custom_serializer)
-                    for tool in llm_api.tools
-                ]
-            except HomeAssistantError as err:
-                _LOGGER.error("Error getting LLM API: %s", err)
-                intent_response.async_set_error(
-                    intent.IntentResponseErrorCode.UNKNOWN,
-                    f"Error preparing LLM API: {err}",
-                )
-                return conversation.ConversationResult(
-                    response=intent_response, conversation_id=conversation_id
-                )
+        home_state = llm._get_exposed_entities(
+            self.hass, conversation.DOMAIN
+        )  # TODO: use _get_context()
 
         try:
             # Forward the conversation to the add-on with additional LLM context
-            addon_url = self.entry.data.get(CONF_ADDON_URL, DEFAULT_ADDON_URL)
+            addon_url = ADDON_URL
 
             payload = {
                 "text": user_input.text,
                 "conversation_id": conversation_id,
                 "language": user_input.language,
-                "context": dict(user_input.context.as_dict()),
+                "home_state": home_state,
             }
-
-            # Add LLM API information if available
-            if llm_api:
-                payload["llm_api"] = {
-                    "context": context,
-                    "tools": tools,
-                }
 
             async with session.post(
                 f"{addon_url}/api/conversation",
