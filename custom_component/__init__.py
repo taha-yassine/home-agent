@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-import aiohttp
+import httpx
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -23,25 +23,24 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Home Agent from a config entry."""
-    # Create client session
-    session = aiohttp.ClientSession()
+    # Create client
+    client = httpx.AsyncClient()
 
     # Test connection to add-on
-    addon_url = entry.data.get(ADDON_URL)
     # try:
-    #     async with session.get(f"{addon_url}/api/health") as response:
+    #     async with client.get(f"{addon_url}/api/health") as response:
     #         if response.status != 200:
     #             raise ConfigEntryNotReady(
     #                 f"Failed to connect to Home Agent add-on: {response.status}"
     #             )
-    # except aiohttp.ClientError as err:
-    #     await session.close()
+    # except httpx.HTTPError as err:
+    #     await client.aclose()
     #     raise ConfigEntryNotReady(
     #         f"Failed to connect to Home Agent add-on: {err}"
     #     ) from err
 
-    # Store the session in hass.data
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = session
+    # Store the client in hass.data
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = client
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -51,7 +50,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload Home Agent."""
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        # Close the session when unloading
-        session = hass.data[DOMAIN].pop(entry.entry_id)
-        await session.close()
+        # Close the client when unloading
+        client = hass.data[DOMAIN].pop(entry.entry_id)
+        await client.aclose()
     return unload_ok

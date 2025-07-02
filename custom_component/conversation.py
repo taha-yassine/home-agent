@@ -7,7 +7,7 @@ import logging
 import time
 from typing import Any, Literal
 
-import aiohttp
+import httpx
 import voluptuous as vol
 from voluptuous_openapi import convert
 
@@ -107,8 +107,8 @@ class HomeAgentConversationEntity(
         conversation_id = user_input.conversation_id or ulid.ulid_now()
         intent_response = intent.IntentResponse(language=user_input.language)
 
-        # Get the client session from hass.data
-        session: aiohttp.ClientSession = self.hass.data[DOMAIN][self.entry.entry_id]
+        # Get the client from hass.data
+        client: httpx.AsyncClient = self.hass.data[DOMAIN][self.entry.entry_id]
 
         home_state = llm._get_exposed_entities(
             self.hass, conversation.DOMAIN
@@ -125,19 +125,19 @@ class HomeAgentConversationEntity(
                 "home_state": home_state,
             }
 
-            async with session.post(
+            response = await client.post(
                 f"{addon_url}/api/conversation",
                 json=payload,
-            ) as response:
-                if response.status != 200:
-                    raise HomeAssistantError(
-                        f"Error from add-on: {response.status} {await response.text()}"
-                    )
+            )
+            if response.status_code != 200:
+                raise HomeAssistantError(
+                    f"Error from add-on: {response.status_code} {response.text}"
+                )
 
-                result = await response.json()
-                intent_response.async_set_speech(result["response"])
+            result = response.json()
+            intent_response.async_set_speech(result["response"])
 
-        except (aiohttp.ClientError, TimeoutError) as err:
+        except (httpx.HTTPError, TimeoutError) as err:
             _LOGGER.error("Failed to communicate with Home Agent add-on: %s", err)
             intent_response.async_set_error(
                 intent.IntentResponseErrorCode.UNKNOWN,
