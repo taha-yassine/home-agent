@@ -24,7 +24,9 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Home Agent from a config entry."""
     # Create client
-    client = httpx.AsyncClient()
+    client = httpx.AsyncClient(
+        base_url=ADDON_URL,
+    )
 
     # Test connection to add-on
     # try:

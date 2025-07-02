@@ -28,7 +28,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import ulid
 
 from .const import (
-    ADDON_URL,
     DEFAULT_MAX_HISTORY,
     DOMAIN,
     MAX_HISTORY_SECONDS,
@@ -116,8 +115,6 @@ class HomeAgentConversationEntity(
 
         try:
             # Forward the conversation to the add-on with additional LLM context
-            addon_url = ADDON_URL
-
             payload = {
                 "text": user_input.text,
                 "conversation_id": conversation_id,
@@ -126,7 +123,7 @@ class HomeAgentConversationEntity(
             }
 
             response = await client.post(
-                f"{addon_url}/api/conversation",
+                "/api/conversation",
                 json=payload,
             )
             if response.status_code != 200:
