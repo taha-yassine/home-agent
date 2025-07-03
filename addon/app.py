@@ -26,7 +26,7 @@ from agents import (
     OpenAIChatCompletionsModel
 )
 
-from tools.hass_tools import get_tools as get_hass_tools
+from .tools.hass_tools import get_tools as get_hass_tools
 
 
 
@@ -217,9 +217,6 @@ async def lifespan(app: FastAPI):
         pass
 
 
-app = FastAPI(lifespan=lifespan)
-
-
 class ConversationRequest(BaseModel):
     """Model for conversation request."""
     text: str
@@ -231,48 +228,57 @@ class ConversationResponse(BaseModel):
     """Model for conversation response."""
     response: str
 
+def create_app() -> FastAPI:
+    """Create and configure the FastAPI application."""
+    
+    app = FastAPI(lifespan=lifespan)
 
-@app.post("/api/conversation", response_model=ConversationResponse)
-async def process_conversation(
-    request: ConversationRequest,
-    agent: Agent = Depends(get_agent),
-    hass_client: httpx.AsyncClient = Depends(get_hass_client)
-):
-    """Process a conversation with the agent."""
-    context: Dict[str, Any] = {
-        "conversation_id": request.conversation_id,
-        "language": request.language,
-        "home_state": request.home_state
-    }
-        
-    context["hass_client"] = hass_client
+    @app.post("/api/conversation", response_model=ConversationResponse)
+    async def process_conversation(
+        request: ConversationRequest,
+        agent: Agent = Depends(get_agent),
+        hass_client: httpx.AsyncClient = Depends(get_hass_client)
+    ):
+        """Process a conversation with the agent."""
+        context: Dict[str, Any] = {
+            "conversation_id": request.conversation_id,
+            "language": request.language,
+            "home_state": request.home_state
+        }
+            
+        context["hass_client"] = hass_client
 
-    input = request.text
+        input = request.text
 
-    try:
-        result = await Runner.run(
-            starting_agent=agent,
-            input=input,
-            context=context
-        )
-        return ConversationResponse(response=result.final_output)
-        
-    except Exception as e:
-        _LOGGER.error(f"Error processing conversation: {e}")
-        return ConversationResponse(
-            response=f"I apologize, but I encountered an error: {str(e)}"
-        )
-
-
-@app.get("/api/health")
-async def health_check():
-    """Return health status of the API."""
-    return {"status": "ok"}
+        try:
+            result = await Runner.run(
+                starting_agent=agent,
+                input=input,
+                context=context
+            )
+            return ConversationResponse(response=result.final_output)
+            
+        except Exception as e:
+            _LOGGER.error(f"Error processing conversation: {e}")
+            return ConversationResponse(
+                response=f"I apologize, but I encountered an error: {str(e)}"
+            )
 
 
-@app.get("/api/config")
-async def get_config(settings: Settings = Depends(get_settings)):
-    """Return current configuration."""
-    return {
-        "llm_server_url": settings.llm_server_url
-    }
+    @app.get("/api/health")
+    async def health_check():
+        """Health check endpoint."""
+        return {"status": "ok"}
+
+
+    @app.get("/api/config")
+    async def get_config(settings: Settings = Depends(get_settings)):
+        """Return the current application settings."""
+        return settings
+    
+    return app
+
+
+app = create_app()
+
+
