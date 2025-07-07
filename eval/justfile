@@ -11,3 +11,7 @@ collect:
 eval:
     uv run pytest eval/test_eval.py \
     --model_output_dir={{model_output_dir}}
+
+generate-report:
+    uv run python generate_report.py \
+    --model_output_dir={{model_output_dir}}
