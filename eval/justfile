@@ -1,0 +1,9 @@
+dataset := "assist-mini"
+models := "home-agent"
+model_output_dir := "reports" / dataset / "test"
+
+collect:
+    uv run pytest collect/test_collect.py \
+    --models={{models}} \
+    --dataset=datasets/{{dataset}}/ \
+    --model_output_dir={{model_output_dir}}

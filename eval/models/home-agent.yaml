@@ -1,0 +1,9 @@
+---
+model_id: home-agent
+domain: home_agent
+description: |
+  Home Agent.
+urls:
+  - https://github.com/taha-yassine/home-agent
+config_entry_options:
+  llm_hass_api: assist

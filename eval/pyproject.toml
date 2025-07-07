@@ -1,0 +1,28 @@
+[project]
+name = "eval"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "asgi-lifespan>=2.1.0",
+    "dotenv>=0.9.9",
+    "home-assistant-datasets",
+    "ipykernel>=6.29.5",
+    "matplotlib>=3.10.3",
+    "notebook>=7.4.4",
+    "pandas>=2.3.0",
+    "pyrate-limiter>=3.7.1", # required by home-assistant-datasets
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+    "pytest-homeassistant-custom-component>=0.13.236",
+    "starlette>=0.46.2",
+]
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.uv.sources]
+home-assistant-datasets = { git = "https://github.com/allenporter/home-assistant-datasets", tag = "0.2.0" }
