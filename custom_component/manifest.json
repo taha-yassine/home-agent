@@ -6,7 +6,7 @@
   ],
   "config_flow": true,
   "dependencies": ["homeassistant", "conversation"],
-  "documentation": "https://www.home-assistant.io/integrations/home_agent",
+  "documentation": "https://www.github.com/taha-yassine/home-agent",
   "homekit": {},
   "iot_class": "local_polling",
   "requirements": [],
