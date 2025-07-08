@@ -73,14 +73,15 @@ async def handle_intent(
 @function_tool
 async def turn_on(
     ctx_wrapper: RunContextWrapper[Any],
-    name: str
+    name: str,
+    domain: str,
 ) -> str:
     """
-    Turns on/opens/presses a device or entity. For locks, this performs a 'lock' action. Use for requests like 'turn on', 'activate', 'enable', or 'lock'.
+    Turns on/opens/presses a device or entity. For locks, this performs a 'lock' action. Use for requests like 'turn on', 'activate', 'enable', or 'lock'. Always specify the domain of the entity.
     """
     hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
     
-    response = await handle_intent(hass_client, INTENT_TURN_ON, {"name": name})
+    response = await handle_intent(hass_client, INTENT_TURN_ON, {"name": name, "domain": domain})
     
     if response.get("response_type") == "action_done":
         return "Done."
@@ -90,14 +91,15 @@ async def turn_on(
 @function_tool
 async def turn_off(
     ctx_wrapper: RunContextWrapper[Any],
-    name: str
+    name: str,
+    domain: str,
 ) -> str:
     """
-    Turns off/closes/releases a device or entity. For locks, this performs a 'unlock' action. Use for requests like 'turn off', 'deactivate', 'disable', or 'unlock'.
+    Turns off/closes/releases a device or entity. For locks, this performs a 'unlock' action. Use for requests like 'turn off', 'deactivate', 'disable', or 'unlock'. Always specify the domain of the entity.
     """
     hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
 
-    response = await handle_intent(hass_client, INTENT_TURN_OFF, {"name": name})
+    response = await handle_intent(hass_client, INTENT_TURN_OFF, {"name": name, "domain": domain})
 
     if response.get("response_type") == "action_done":
         return "Done."
