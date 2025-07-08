@@ -16,16 +16,35 @@ INTENT_TIMER_STATUS = "HassTimerStatus"
 INTENT_GET_CURRENT_DATE = "HassGetCurrentDate" # keep?
 INTENT_GET_CURRENT_TIME = "HassGetCurrentTime" # keep?
 INTENT_GET_TEMPERATURE = "HassClimateGetTemperature" # keep?
-# INTENT_SET_POSITION = "HassSetPosition"
+INTENT_SET_POSITION = "HassSetPosition"
 # INTENT_GET_STATE = "HassGetState"
 # INTENT_TOGGLE = "HassToggle"
 # INTENT_NEVERMIND = "HassNevermind"
 # INTENT_RESPOND = "HassRespond"
 # INTENT_BROADCAST = "HassBroadcast"
 
+INTENT_LIGHT_SET = "HassLightSet"
+INTENT_LIST_ADD_ITEM = "HassListAddItem"
+INTENT_VACUUM_START = "HassVacuumStart"
+INTENT_VACUUM_RETURN_TO_BASE = "HassVacuumReturnToBase"
+INTENT_MEDIA_PAUSE = "HassMediaPause"
+INTENT_MEDIA_UNPAUSE = "HassMediaUnpause"
+INTENT_MEDIA_NEXT = "HassMediaNext"
+INTENT_MEDIA_PREVIOUS = "HassMediaPrevious"
+INTENT_SET_VOLUME = "HassSetVolume"
+
 intents_names = [
     INTENT_TURN_OFF,
     INTENT_TURN_ON,
+    INTENT_LIGHT_SET,
+    INTENT_LIST_ADD_ITEM,
+    INTENT_VACUUM_START,
+    INTENT_VACUUM_RETURN_TO_BASE,
+    INTENT_MEDIA_PAUSE,
+    INTENT_MEDIA_UNPAUSE,
+    INTENT_MEDIA_NEXT,
+    INTENT_MEDIA_PREVIOUS,
+    INTENT_SET_VOLUME,
     INTENT_START_TIMER,
     INTENT_CANCEL_TIMER,
     INTENT_CANCEL_ALL_TIMERS,
@@ -37,6 +56,7 @@ intents_names = [
     INTENT_GET_CURRENT_DATE,
     INTENT_GET_CURRENT_TIME,
     INTENT_GET_TEMPERATURE,
+    INTENT_SET_POSITION,
 ]
 
 async def handle_intent(
@@ -315,11 +335,234 @@ async def get_temperature(
     if speech:
         return speech
     return "Could not retrieve the temperature."
+
+@function_tool
+async def set_position(
+    ctx_wrapper: RunContextWrapper[Any],
+    name: str,
+    position: int,
+) -> str:
+    """Sets the position of an entity.
     
+    Args:
+        name: The name of the entity to set the position of.
+        position: The position to set the entity to, between 0 and 100.
+    """
+    hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
+    slots: dict[str, Any] = {"name": name, "position": position}
+
+    response = await handle_intent(hass_client, INTENT_SET_POSITION, slots)
+
+    speech = response.get("speech", {}).get("plain", {}).get("speech")
+    if speech:
+        return speech
+    if response.get("response_type") == "action_done":
+        return "Position set."
+    return "Failed to set position."
+
+@function_tool
+async def set_light(
+    ctx_wrapper: RunContextWrapper[Any],
+    name: str,
+    brightness: Optional[int] = None,
+    color: Optional[str] = None,
+) -> str:
+    """Sets the color of a light.
+    
+    Args:
+        name: The name of the light to set.
+        brightness: The brightness of the light to set, between 0 and 100.
+        color: The name of the color to set the light to.
+    """
+    hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
+    slots: dict[str, Any] = {"name": name}
+    if brightness is not None:
+        slots["brightness"] = brightness
+    if color is not None:
+        slots["color"] = color
+    response = await handle_intent(hass_client, INTENT_LIGHT_SET, slots)
+    speech = response.get("speech", {}).get("plain", {}).get("speech")
+    if speech:
+        return speech
+    if response.get("response_type") == "action_done":
+        return "Light set."
+    return "Failed to set light."
+    
+@function_tool
+async def add_list_item(
+    ctx_wrapper: RunContextWrapper[Any],
+    name: str,
+    item: str,
+) -> str:
+    """Adds an item to a to-do list.
+    
+    Args:
+        name: The name of the list to add the item to.
+        item: The item to add to the list.
+    """
+    hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
+    slots = {"name": name, "item": item}
+    response = await handle_intent(hass_client, INTENT_LIST_ADD_ITEM, slots)
+    speech = response.get("speech", {}).get("plain", {}).get("speech")
+    if speech:
+        return speech
+    if response.get("response_type") == "action_done":
+        return "Item added."
+    return "Failed to add item."
+
+@function_tool
+async def start_vacuum(
+    ctx_wrapper: RunContextWrapper[Any],
+    name: str,
+) -> str:
+    """Starts a vacuum cleaner."""
+    hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
+    slots: dict[str, Any] = {"name": name}
+
+    response = await handle_intent(hass_client, INTENT_VACUUM_START, slots)
+
+    speech = response.get("speech", {}).get("plain", {}).get("speech")
+    if speech:
+        return speech
+
+    if response.get("response_type") == "action_done":
+        return "Vacuum started."
+    return "Failed to start vacuum."
+
+@function_tool
+async def return_vacuum_to_base(
+    ctx_wrapper: RunContextWrapper[Any],
+    name: str,
+) -> str:
+    """Tells a vacuum cleaner to return to its base/dock."""
+    hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
+    slots = {"name": name}
+
+    response = await handle_intent(hass_client, INTENT_VACUUM_RETURN_TO_BASE, slots)
+
+    speech = response.get("speech", {}).get("plain", {}).get("speech")
+    if speech:
+        return speech
+
+    if response.get("response_type") == "action_done":
+        return "Done."
+    return "Failed."
+
+@function_tool
+async def pause_media(
+    ctx_wrapper: RunContextWrapper[Any],
+    name: str,
+) -> str:
+    """Pauses a media player."""
+    hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
+    slots = {"name": name}
+
+    response = await handle_intent(hass_client, INTENT_MEDIA_PAUSE, slots)
+
+    speech = response.get("speech", {}).get("plain", {}).get("speech")
+    if speech:
+        return speech
+
+    if response.get("response_type") == "action_done":
+        return "Done."
+    return "Failed."
+
+@function_tool
+async def unpause_media(
+    ctx_wrapper: RunContextWrapper[Any],
+    name: str,
+) -> str:
+    """Unpauses a media player."""
+    hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
+    slots = {"name": name}
+
+    response = await handle_intent(hass_client, INTENT_MEDIA_UNPAUSE, slots)
+
+    speech = response.get("speech", {}).get("plain", {}).get("speech")
+    if speech:
+        return speech
+
+    if response.get("response_type") == "action_done":
+        return "Done."
+    return "Failed."
+
+@function_tool
+async def next_track(
+    ctx_wrapper: RunContextWrapper[Any],
+    name: str,
+) -> str:
+    """Skips to the next track on a media player."""
+    hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
+    slots = {"name": name}
+
+    response = await handle_intent(hass_client, INTENT_MEDIA_NEXT, slots)
+
+    speech = response.get("speech", {}).get("plain", {}).get("speech")
+    if speech:
+        return speech
+
+    if response.get("response_type") == "action_done":
+        return "Done."
+    return "Failed."
+
+@function_tool
+async def previous_track(
+    ctx_wrapper: RunContextWrapper[Any],
+    name: str,
+) -> str:
+    """Skips to the previous track on a media player."""
+    hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
+    slots = {"name": name}
+
+    response = await handle_intent(hass_client, INTENT_MEDIA_PREVIOUS, slots)
+
+    speech = response.get("speech", {}).get("plain", {}).get("speech")
+    if speech:
+        return speech
+
+    if response.get("response_type") == "action_done":
+        return "Done."
+    return "Failed."
+
+@function_tool
+async def set_volume(
+    ctx_wrapper: RunContextWrapper[Any],
+    volume_level: int,
+    name: str,
+) -> str:
+    """Sets the volume of a media player.
+    
+    Args:
+        volume_level: The volume level to set, between 0 and 100.
+        name: The name of the media player to set the volume of.
+    """
+    hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
+    slots: dict[str, Any] = {"volume_level": volume_level}
+    slots["name"] = name
+
+    response = await handle_intent(hass_client, INTENT_SET_VOLUME, slots)
+
+    speech = response.get("speech", {}).get("plain", {}).get("speech")
+    if speech:
+        return speech
+
+    if response.get("response_type") == "action_done":
+        return "Done."
+    return "Failed."
+
 def get_tools():
     return [
         turn_on,
         turn_off,
+        set_light,
+        add_list_item,
+        start_vacuum,
+        return_vacuum_to_base,
+        pause_media,
+        unpause_media,
+        next_track,
+        previous_track,
+        set_volume,
         start_timer,
         cancel_timer,
         cancel_all_timers,
@@ -331,4 +574,5 @@ def get_tools():
         get_current_date,
         get_current_time,
         get_temperature,
+        set_position,
     ]
