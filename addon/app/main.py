@@ -3,33 +3,19 @@ if os.getenv("DEBUGPY", "false").lower() == "true":
     import debugpy
     debugpy.listen(("0.0.0.0", 6789))
 
-from fastapi import FastAPI, Request, Depends
-from pydantic import BaseModel
+from fastapi import FastAPI
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
-from typing import Any, Dict, List
 import logging
 from contextlib import asynccontextmanager
 import httpx
 from functools import lru_cache
 
-from openai import (
-    AsyncOpenAI,
-    DefaultAsyncHttpxClient,
-    APIStatusError
-)
-from agents import (
-    FunctionTool,
-    RunContextWrapper,
-    Agent,
-    Runner,
-    set_trace_processors,
-    OpenAIChatCompletionsModel,
-    Tool,
-    ModelSettings,
-)
+from openai import AsyncOpenAI, DefaultAsyncHttpxClient
+from agents import set_trace_processors
 
 from .tools.hass_tools import get_tools as get_hass_tools
+from .api import router as api_router
 
 
 
@@ -75,13 +61,7 @@ def get_settings() -> Settings:
         return Settings() # pyright: ignore
 
 
-def construct_prompt(ctx_wrapper: RunContextWrapper[Any], agent: Agent | None) -> str:
-    """Construct prompt for the agent."""
-    instructions = "You are a helpful assistant that helps with tasks around the home. You will be given instructions that you are asked to follow. You can use the tools provided to you to control devices in the home in order to complete the task. When you have completed the task, you should respond with a summary of the task and the result."
 
-    home_state = ctx_wrapper.context["home_state"]
-
-    return instructions + "\n\n" + str(home_state)
 
 
 @asynccontextmanager
@@ -170,6 +150,7 @@ async def lifespan(app: FastAPI):
             "openai_client": openai_client,
             "hass_client": hass_client,
             "tools": tools,
+            "model_id": settings.model_id,
         }
     finally:
         # Shutdown
@@ -177,92 +158,15 @@ async def lifespan(app: FastAPI):
         await hass_client.aclose()
 
 
-class ConversationRequest(BaseModel):
-    """Model for conversation request."""
-    text: str
-    conversation_id: str
-    language: str
-    home_state: Dict[str, Any]
 
-class ConversationResponse(BaseModel):
-    """Model for conversation response."""
-    response: str
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     
     app = FastAPI(lifespan=lifespan)
 
-    def get_openai_client(request: Request) -> AsyncOpenAI:
-        return request.state.openai_client
+    app.include_router(api_router)
 
-    def get_hass_client(request: Request) -> httpx.AsyncClient:
-        return request.state.hass_client
-
-    def get_tools(request: Request) -> List[Tool]:
-        return request.state.tools
-
-    @app.post("/api/conversation", response_model=ConversationResponse)
-    async def process_conversation(
-        conversation_request: ConversationRequest,
-        settings: Settings = Depends(get_settings),
-        openai_client: AsyncOpenAI = Depends(get_openai_client),
-        hass_client: httpx.AsyncClient = Depends(get_hass_client),
-        tools: List[Tool] = Depends(get_tools),
-    ):
-        """Process a conversation with the agent."""
-        agent = Agent(
-            name="Home Agent",
-            model=OpenAIChatCompletionsModel(
-                model=settings.model_id,
-                openai_client=openai_client,
-            ),
-            instructions=construct_prompt,
-            tools=tools,
-            model_settings=ModelSettings(
-                extra_body={
-                    "chat_template_kwargs": {
-                        "enable_thinking": False,
-                    }
-                }
-            ),
-        )
-        
-        context: Dict[str, Any] = {
-            "conversation_id": conversation_request.conversation_id,
-            "language": conversation_request.language,
-            "home_state": conversation_request.home_state,
-            "hass_client": hass_client,
-        }
-
-        input = conversation_request.text
-
-        try:
-            result = await Runner.run(
-                starting_agent=agent,
-                input=input,
-                context=context
-            )
-            return ConversationResponse(response=result.final_output)
-            
-        except Exception as e:
-            _LOGGER.error(f"Error processing conversation: {e}")
-            return ConversationResponse(
-                response=f"I apologize, but I encountered an error: {str(e)}"
-            )
-
-
-    @app.get("/api/health")
-    async def health_check():
-        """Health check endpoint."""
-        return {"status": "ok"}
-
-
-    @app.get("/api/config")
-    async def get_config(settings: Settings = Depends(get_settings)):
-        """Return the current application settings."""
-        return settings
-    
     return app
 
 
