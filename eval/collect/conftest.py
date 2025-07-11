@@ -48,7 +48,7 @@ async def addon_app(
     monkeypatch.setenv("HOME_AGENT_HA_API_URL", ha_api_url)
     monkeypatch.setenv("HOME_AGENT_HA_API_KEY", hass_access_token)
     
-    from addon.app import create_app, get_settings
+    from app.main import create_app, get_settings
     
     # Clear the settings cache to ensure the new env vars are loaded
     get_settings.cache_clear()

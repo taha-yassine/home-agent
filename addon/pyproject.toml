@@ -27,3 +27,12 @@ dev = [
     "pytest>=8.3.5",
     "ruff>=0.12.1",
 ]
+
+# A build system is required for the app to be available to other workspace members
+[build-system]
+requires = ["uv_build>=0.7.0,<0.8.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
+module-name = "app"

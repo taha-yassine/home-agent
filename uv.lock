@@ -56,7 +56,7 @@ wheels = [
 [[package]]
 name = "addon"
 version = "0.1.0"
-source = { virtual = "addon" }
+source = { editable = "addon" }
 dependencies = [
     { name = "arize-phoenix" },
     { name = "arize-phoenix-otel" },
@@ -1293,6 +1293,7 @@ name = "eval"
 version = "0.1.0"
 source = { virtual = "eval" }
 dependencies = [
+    { name = "addon" },
     { name = "asgi-lifespan" },
     { name = "dotenv" },
     { name = "home-assistant-datasets" },
@@ -1310,6 +1311,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "addon", editable = "addon" },
     { name = "asgi-lifespan", specifier = ">=2.1.0" },
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "home-assistant-datasets", git = "https://github.com/allenporter/home-assistant-datasets?tag=0.2.0" },
@@ -4801,7 +4803,7 @@ name = "strawberry-graphql"
 version = "0.270.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "graphql-core", marker = "python_full_version < '4.0'" },
+    { name = "graphql-core", marker = "python_full_version < '4'" },
     { name = "packaging" },
     { name = "python-dateutil" },
     { name = "typing-extensions" },

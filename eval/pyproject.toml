@@ -5,6 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "addon",
+    
     "asgi-lifespan>=2.1.0",
     "dotenv>=0.9.9",
     "home-assistant-datasets",
@@ -25,4 +27,5 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
 [tool.uv.sources]
+addon = { workspace = true }
 home-assistant-datasets = { git = "https://github.com/allenporter/home-assistant-datasets", tag = "0.2.0" }

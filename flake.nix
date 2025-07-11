@@ -51,7 +51,9 @@
 
     shell = pkgs.mkShell {
       packages = with pkgs; [
-        python
+        (python.withPackages (ps: with ps; [
+          uv-build
+        ]))
         uv
         just
         devcontainer
@@ -69,7 +71,7 @@
 
         sidem.packages.${system}.default
       ] ++ (with pkgs-stable; [
-        # mitmproxy
+        mitmproxy
       ]);
       env = {
         CC = "${pkgs.gcc}/bin/gcc";
