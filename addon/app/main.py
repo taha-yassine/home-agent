@@ -4,12 +4,15 @@ if os.getenv("DEBUGPY", "false").lower() == "true":
     debugpy.listen(("0.0.0.0", 6789))
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 import logging
 from contextlib import asynccontextmanager
 import httpx
 from functools import lru_cache
+from pathlib import Path
 
 from openai import AsyncOpenAI, DefaultAsyncHttpxClient
 from agents import set_trace_processors
@@ -166,6 +169,14 @@ def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
 
     app.include_router(api_router)
+
+    # Frontend
+    app.mount("/assets", StaticFiles(directory=Path(__file__).parent.parent / "frontend" / "dist" / "assets"), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        """Serve the frontend."""
+        return FileResponse(Path(__file__).parent.parent / "frontend" / "dist" / "index.html")
 
     return app
 
