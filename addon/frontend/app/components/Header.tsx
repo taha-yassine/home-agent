@@ -1,4 +1,5 @@
 import { NavLink } from "react-router";
+import ThemeToggle from "./ThemeToggle";
 
 const tabs = [
   { name: "Conversations", href: "/" },
@@ -35,6 +36,7 @@ export default function Header() {
             </div>
           </div>
           <div className="flex items-center justify-end">
+            <ThemeToggle />
           </div>
         </div>
       </nav>
