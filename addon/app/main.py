@@ -171,12 +171,13 @@ def create_app() -> FastAPI:
     app.include_router(api_router)
 
     # Frontend
-    app.mount("/assets", StaticFiles(directory=Path(__file__).parent.parent / "frontend" / "dist" / "assets"), name="assets")
-
+    frontend_dir = Path(__file__).parent.parent / "frontend" / "build" / "client"
+    
+    app.mount("/assets", StaticFiles(directory=frontend_dir / "assets"), name="assets")
+    
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
-        """Serve the frontend."""
-        return FileResponse(Path(__file__).parent.parent / "frontend" / "dist" / "index.html")
+        return FileResponse(frontend_dir / "index.html")
 
     return app
 
