@@ -2,7 +2,7 @@ import { NavLink } from "react-router";
 import ThemeToggle from "./ThemeToggle";
 
 const tabs = [
-  { name: "Conversations", href: "/" },
+  { name: "Conversations", href: "/conversations" },
   { name: "Models", href: "/models" },
   { name: "Documents", href: "/documents" },
   { name: "Backends", href: "/backends" },

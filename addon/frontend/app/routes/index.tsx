@@ -1,7 +1,5 @@
-export default function Conversations() {
-  return (
-    <main>
-      <h2>Conversations</h2>
-    </main>
-  );
+import { Navigate } from "react-router";
+
+export default function Index() {
+  return <Navigate to="/conversations" replace />;
 }
