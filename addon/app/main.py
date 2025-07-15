@@ -10,12 +10,15 @@ import logging
 from contextlib import asynccontextmanager
 import httpx
 from pathlib import Path
+from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from openai import AsyncOpenAI, DefaultAsyncHttpxClient
 from agents import set_trace_processors
 
 from .tools.hass_tools import get_tools as get_hass_tools
 from .api import router as api_router
+from .db.base import Base
 from .settings import get_settings
 
 
@@ -34,6 +37,18 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     settings = get_settings()
+
+    settings.db_path.mkdir(parents=True, exist_ok=True)
+
+    db_async_engine = create_async_engine(f"sqlite+aiosqlite:///{settings.db_path / 'home_agent.db'}")
+    async_session = async_sessionmaker(bind=db_async_engine, expire_on_commit=False)
+
+    async with db_async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    # For use with sync trace exporter
+    # May need better handling
+    db_sync_engine = create_engine(f"sqlite:///{settings.db_path / 'home_agent.db'}")
     
     openai_client = AsyncOpenAI(
         base_url=settings.llm_server_url,
@@ -114,11 +129,15 @@ async def lifespan(app: FastAPI):
             "hass_client": hass_client,
             "tools": tools,
             "model_id": settings.model_id,
+            "db": async_session,
+            "db_sync_engine": db_sync_engine
         }
     finally:
         # Shutdown
         _LOGGER.info("Closing resources...")
         await hass_client.aclose()
+        await db_async_engine.dispose()
+        db_sync_engine.dispose()
 
 
 

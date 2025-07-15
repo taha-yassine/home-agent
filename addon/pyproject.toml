@@ -16,6 +16,7 @@ dependencies = [
     "openinference-instrumentation-openai-agents>=0.1.7",
     "pydantic>=2.0.0",
     "pydantic-settings==2.7.1",
+    "sqlalchemy>=2.0.39",
     "uvicorn>=0.24.0",
 ]
 

@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     model_id: str = "generic" # ID of the LLM model to use; some backends ignore this
     ha_api_url: str  # Home Assistant API URL
     ha_api_key: str  # Bearer token for Home Assistant authentication
+    db_path: Path = Path.home() / ".local" / "share" / "home-agent"
 
     model_config = SettingsConfigDict(
         env_prefix="HOME_AGENT_",
