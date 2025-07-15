@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from typing import Any, Dict
+from typing import Any, Dict, List
+from datetime import datetime
 
 class ConversationRequest(BaseModel):
     """Model for conversation request."""
@@ -10,4 +11,18 @@ class ConversationRequest(BaseModel):
 
 class ConversationResponse(BaseModel):
     """Model for conversation response."""
-    response: str 
+    response: str
+
+
+class Conversation(BaseModel):
+    """Model for a single conversation."""
+
+    id: str
+    started_at: datetime
+    instruction: str
+
+
+class ConversationList(BaseModel):
+    """Model for a list of conversations."""
+
+    conversations: List[Conversation] 

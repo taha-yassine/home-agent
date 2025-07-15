@@ -3,6 +3,9 @@ from typing import Any, Dict, List
 import httpx
 from openai import AsyncOpenAI
 from sqlalchemy import Engine
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from agents import (
     Agent,
@@ -15,7 +18,13 @@ from agents import (
 )
 from agents.tracing.processors import BatchTraceProcessor
 
-from ..models import ConversationRequest, ConversationResponse
+from ..db.models import Trace
+from ..models import (
+    Conversation,
+    ConversationList,
+    ConversationRequest,
+    ConversationResponse,
+)
 from ..tracing import HASpanExporter
 
 _LOGGER = logging.getLogger('uvicorn.error')
@@ -30,7 +39,36 @@ def construct_prompt(ctx_wrapper: RunContextWrapper[Any], agent: Agent | None) -
 
 class ConversationService:
     """Service for handling agent conversations."""
-    
+
+    @staticmethod
+    async def get_conversations(db: AsyncSession) -> ConversationList:
+        """Get all conversations from the database."""
+        conversations = []
+        stmt = select(Trace).options(selectinload(Trace.spans))
+        traces = (await db.execute(stmt)).unique().scalars().all()
+        for trace in traces:
+            first_generation_span = next(
+                (span for span in trace.spans if span.span_type == "generation"),
+                None,
+            )
+
+            if first_generation_span:
+                try:
+                    instruction = first_generation_span.span_data["input"][1]["content"]
+                    conversations.append(
+                        Conversation(
+                            id=trace.id,
+                            started_at=first_generation_span.started_at,
+                            instruction=instruction,
+                        )
+                    )
+                except (KeyError, IndexError):
+                    _LOGGER.warning(
+                        f"Could not extract instruction for trace {trace.id}",
+                        exc_info=True,
+                    )
+        return ConversationList(conversations=conversations)
+
     @staticmethod
     async def process_conversation(
         conversation_request: ConversationRequest,
