@@ -6,12 +6,9 @@ if os.getenv("DEBUGPY", "false").lower() == "true":
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from dotenv import load_dotenv
 import logging
 from contextlib import asynccontextmanager
 import httpx
-from functools import lru_cache
 from pathlib import Path
 
 from openai import AsyncOpenAI, DefaultAsyncHttpxClient
@@ -19,7 +16,7 @@ from agents import set_trace_processors
 
 from .tools.hass_tools import get_tools as get_hass_tools
 from .api import router as api_router
-
+from .settings import get_settings
 
 
 # TODO: Set up
@@ -28,43 +25,6 @@ from .api import router as api_router
 # os.environ["OR_APP_NAME"] = "home-agent"
 
 _LOGGER = logging.getLogger('uvicorn.error')
-
-class Settings(BaseSettings):
-    """Application settings."""
-    app_env: str = "prod"
-    llm_server_url: str # URL of the LLM inference server
-    llm_server_api_key: str # API key for the LLM inference server
-    llm_server_proxy: str | None = None # Proxy for the LLM inference server
-    model_id: str = "generic" # ID of the LLM model to use; some backends ignore this
-    ha_api_url: str  # Home Assistant API URL
-    ha_api_key: str  # Bearer token for Home Assistant authentication
-    
-    model_config = SettingsConfigDict(
-        env_prefix="HOME_AGENT_",
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
-    )
-
-
-@lru_cache(maxsize=1)
-def get_settings() -> Settings:
-    """
-    Get application settings.
-    This function is cached to ensure settings are loaded only once.
-    """
-    load_dotenv()
-    app_env = os.getenv("APP_ENV", "prod")
-    if app_env == "prod":
-        return Settings(
-            ha_api_url="http://supervisor/core/api",
-            ha_api_key=os.getenv("SUPERVISOR_TOKEN")
-        ) # pyright: ignore
-    else:
-        return Settings() # pyright: ignore
-
-
-
 
 
 @asynccontextmanager
