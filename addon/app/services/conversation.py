@@ -31,7 +31,7 @@ _LOGGER = logging.getLogger('uvicorn.error')
 
 def construct_prompt(ctx_wrapper: RunContextWrapper[Any], agent: Agent | None) -> str:
     """Construct prompt for the agent."""
-    instructions = "You are a helpful assistant that helps with tasks around the home. You will be given instructions that you are asked to follow. You can use the tools provided to you to control devices in the home in order to complete the task. When you have completed the task, you should respond with a summary of the task and the result."
+    instructions = "You are a helpful assistant that helps with tasks around the home. You will be given instructions that you are asked to follow. You can use the tools provided to you to control devices in the home in order to complete the task. When you have completed the task, you should respond with a summary of the task and the result in first person (e.g. I turned on the lights)."
 
     home_state = ctx_wrapper.context["home_state"]
 
