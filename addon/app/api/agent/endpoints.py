@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, Request
 from typing import List
 import httpx
 from openai import AsyncOpenAI
+from sqlalchemy import Engine
 
 from agents import Tool
 from ...models import ConversationRequest, ConversationResponse
 from ...services import ConversationService
+from ...dependencies import get_sync_db
 
 def get_openai_client(request: Request) -> AsyncOpenAI:
     return request.state.openai_client
@@ -28,6 +30,7 @@ async def process_conversation(
     hass_client: httpx.AsyncClient = Depends(get_hass_client),
     tools: List[Tool] = Depends(get_tools),
     model_id: str = Depends(get_model_id),
+    db_engine: Engine = Depends(get_sync_db),
 ):
     """Process a conversation with the agent."""
     return await ConversationService.process_conversation(
@@ -36,4 +39,5 @@ async def process_conversation(
         hass_client=hass_client,
         tools=tools,
         model_id=model_id,
+        db_engine=db_engine,
     ) 

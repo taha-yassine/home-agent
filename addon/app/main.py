@@ -66,7 +66,6 @@ async def lifespan(app: FastAPI):
     tools = get_hass_tools()
 
     try:
-        set_trace_processors([])
         
         _LOGGER.info("Pinging Home Assistant API...")
         response = await hass_client.get("/")

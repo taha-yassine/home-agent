@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict, List
 import httpx
 from openai import AsyncOpenAI
+from sqlalchemy import Engine
 
 from agents import (
     Agent,
@@ -10,9 +11,12 @@ from agents import (
     Tool,
     ModelSettings,
     RunContextWrapper,
+    set_trace_processors,
 )
+from agents.tracing.processors import BatchTraceProcessor
 
 from ..models import ConversationRequest, ConversationResponse
+from ..tracing import HASpanExporter
 
 _LOGGER = logging.getLogger('uvicorn.error')
 
@@ -34,8 +38,11 @@ class ConversationService:
         hass_client: httpx.AsyncClient,
         tools: List[Tool],
         model_id: str,
+        db_engine: Engine,
     ) -> ConversationResponse:
         """Process a conversation with the agent."""
+        set_trace_processors([BatchTraceProcessor(exporter=HASpanExporter(db_engine))])
+
         agent = Agent(
             name="Home Agent",
             model=OpenAIChatCompletionsModel(
@@ -52,7 +59,7 @@ class ConversationService:
                 }
             ),
         )
-        
+
         context: Dict[str, Any] = {
             "conversation_id": conversation_request.conversation_id,
             "language": conversation_request.language,
@@ -70,7 +77,7 @@ class ConversationService:
                 max_turns=3,
             )
             return ConversationResponse(response=result.final_output)
-            
+
         except Exception as e:
             _LOGGER.error(f"Error processing conversation: {e}")
             return ConversationResponse(
