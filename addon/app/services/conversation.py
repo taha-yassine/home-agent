@@ -6,6 +6,7 @@ from sqlalchemy import Engine
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+from datetime import timezone
 
 from agents import (
     Agent,
@@ -55,10 +56,14 @@ class ConversationService:
             if first_generation_span:
                 try:
                     instruction = first_generation_span.span_data["input"][1]["content"]
+
+                    # sqlite3 strips timezone info from datetime objects so we need to add it back
+                    started_at = first_generation_span.started_at.replace(tzinfo=timezone.utc)
+
                     conversations.append(
                         Conversation(
                             id=trace.id,
-                            started_at=first_generation_span.started_at,
+                            started_at=started_at,
                             instruction=instruction,
                         )
                     )
