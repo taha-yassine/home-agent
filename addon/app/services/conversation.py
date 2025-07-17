@@ -2,10 +2,9 @@ import logging
 from typing import Any, Dict, List
 import httpx
 from openai import AsyncOpenAI
-from sqlalchemy import Engine
+from sqlalchemy import Engine, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased
 from datetime import timezone
 
 from agents import (
@@ -19,7 +18,7 @@ from agents import (
 )
 from agents.tracing.processors import BatchTraceProcessor
 
-from ..db.models import Trace
+from ..db import Span, Trace
 from ..models import (
     Conversation,
     ConversationList,
@@ -44,34 +43,57 @@ class ConversationService:
     @staticmethod
     async def get_conversations(db: AsyncSession) -> ConversationList:
         """Get all conversations from the database."""
-        conversations = []
-        stmt = select(Trace).options(selectinload(Trace.spans))
-        traces = (await db.execute(stmt)).unique().scalars().all()
-        for trace in traces:
-            first_generation_span = next(
-                (span for span in trace.spans if span.span_type == "generation"),
-                None,
+        # TODO: Implement proper sorting and pagination
+
+        ranked_spans_subq = (
+            select(
+                Span,
+                func.row_number()
+                .over(
+                    partition_by=Span.trace_id,
+                    order_by=desc(Span.started_at),
+                )
+                .label("row_num"),
             )
+            .where(Span.span_type == "generation")
+            .subquery("ranked_spans")
+        )
 
-            if first_generation_span:
-                try:
-                    instruction = first_generation_span.span_data["input"][1]["content"]
+        latest_generation_span_alias = aliased(Span, ranked_spans_subq)
 
-                    # sqlite3 strips timezone info from datetime objects so we need to add it back
-                    started_at = first_generation_span.started_at.replace(tzinfo=timezone.utc)
+        stmt = (
+            select(Trace, latest_generation_span_alias)
+            .join(
+                latest_generation_span_alias,
+                Trace.id == latest_generation_span_alias.trace_id,
+            )
+            .where(ranked_spans_subq.c.row_num == 1)
+            .order_by(desc(latest_generation_span_alias.started_at))
+        )
 
-                    conversations.append(
-                        Conversation(
-                            id=trace.id,
-                            started_at=started_at,
-                            instruction=instruction,
-                        )
+        results = (await db.execute(stmt)).all()
+        conversations = []
+        for trace, latest_generation_span in results:
+            try:
+                instruction = latest_generation_span.span_data["input"][1]["content"]
+
+                # sqlite3 strips timezone info from datetime objects so we need to add it back
+                started_at = latest_generation_span.started_at.replace(
+                    tzinfo=timezone.utc
+                )
+
+                conversations.append(
+                    Conversation(
+                        id=trace.id,
+                        started_at=started_at,
+                        instruction=instruction,
                     )
-                except (KeyError, IndexError):
-                    _LOGGER.warning(
-                        f"Could not extract instruction for trace {trace.id}",
-                        exc_info=True,
-                    )
+                )
+            except (KeyError, IndexError):
+                _LOGGER.warning(
+                    f"Could not extract instruction for trace {trace.id}",
+                    exc_info=True,
+                )
         return ConversationList(conversations=conversations)
 
     @staticmethod
