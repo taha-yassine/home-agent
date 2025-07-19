@@ -13,6 +13,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN, ADDON_URL
+from .api import async_register_api_endpoints
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,6 +47,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Register API endpoint
+    async_register_api_endpoints(hass)
+
     return True
 
 

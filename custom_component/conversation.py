@@ -109,21 +109,16 @@ class HomeAgentConversationEntity(
         # Get the client from hass.data
         client: httpx.AsyncClient = self.hass.data[DOMAIN][self.entry.entry_id]
 
-        home_state = llm._get_exposed_entities(
-            self.hass, conversation.DOMAIN
-        )  # TODO: use _get_context()
-
         try:
             # Forward the conversation to the add-on with additional LLM context
             payload = {
                 "text": user_input.text,
                 "conversation_id": conversation_id,
                 "language": user_input.language,
-                "home_state": home_state,
             }
 
             response = await client.post(
-                "/api/conversation",
+                "/api/agent/conversation",
                 json=payload,
             )
             if response.status_code != 200:

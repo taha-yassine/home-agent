@@ -6,6 +6,8 @@ from sqlalchemy import Engine, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from datetime import timezone
+from textwrap import dedent
+import yaml
 
 from agents import (
     Agent,
@@ -31,11 +33,17 @@ _LOGGER = logging.getLogger('uvicorn.error')
 
 def construct_prompt(ctx_wrapper: RunContextWrapper[Any], agent: Agent | None) -> str:
     """Construct prompt for the agent."""
-    instructions = "You are a helpful assistant that helps with tasks around the home. You will be given instructions that you are asked to follow. You can use the tools provided to you to control devices in the home in order to complete the task. When you have completed the task, you should respond with a summary of the task and the result in first person (e.g. I turned on the lights)."
+    home_entities = ctx_wrapper.context["home_entities"]
 
-    home_state = ctx_wrapper.context["home_state"]
+    prompt = dedent(f"""\
+        You are a helpful assistant that helps with tasks around the home. You will be given instructions that you are asked to follow. You can use the tools provided to you to control devices in the home in order to complete the task. When you have completed the task, you should respond with a summary of the task and the result in first person (e.g. I turned on the lights).
 
-    return instructions + "\n\n" + str(home_state)
+        Following is a detailed list of entities and devices currently in the home. You can use the `get_state` tool to get the current state of an entity before taking action.
+
+        {home_entities}
+    """)
+
+    return prompt
 
 class ConversationService:
     """Service for handling agent conversations."""
@@ -97,6 +105,18 @@ class ConversationService:
         return ConversationList(conversations=conversations)
 
     @staticmethod
+    async def fetch_home_entities(hass_client: httpx.AsyncClient) -> str:
+        """Fetch the home entities from the Home Assistant API."""
+        response = await hass_client.get("/home_agent/entities")
+
+        if response.status_code != 200:
+            _LOGGER.error(f"Failed to fetch home entities: {response.status_code} {response.text}")
+            return ""
+        if response.json()["entities"]:
+            return yaml.dump(list(response.json()["entities"].values()), sort_keys=False)
+        return ""
+
+    @staticmethod
     async def process_conversation(
         conversation_request: ConversationRequest,
         openai_client: AsyncOpenAI,
@@ -125,10 +145,12 @@ class ConversationService:
             ),
         )
 
+        home_entities = await ConversationService.fetch_home_entities(hass_client)
+
         context: Dict[str, Any] = {
             "conversation_id": conversation_request.conversation_id,
             "language": conversation_request.language,
-            "home_state": conversation_request.home_state,
+            "home_entities": home_entities,
             "hass_client": hass_client,
         }
 

@@ -57,6 +57,7 @@ intents_names = [
     INTENT_GET_CURRENT_TIME,
     INTENT_GET_TEMPERATURE,
     INTENT_SET_POSITION,
+    # INTENT_GET_STATE,
 ]
 
 async def handle_intent(
@@ -552,6 +553,19 @@ async def set_volume(
         return "Done."
     return "Failed."
 
+@function_tool
+async def get_state(
+    ctx_wrapper: RunContextWrapper[Any],
+    name: str,
+    domain: str,
+) -> str:
+    """Gets the state of an entity."""
+    hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
+
+    response = await hass_client.get("/home_agent/entities/state", params={"name": name, "domain": domain})
+    
+    return response.json()
+
 def get_tools():
     return [
         turn_on,
@@ -577,4 +591,5 @@ def get_tools():
         get_current_time,
         get_temperature,
         set_position,
+        get_state,
     ]

@@ -7,7 +7,6 @@ class ConversationRequest(BaseModel):
     text: str
     conversation_id: str
     language: str
-    home_state: Dict[str, Any]
 
 class ConversationResponse(BaseModel):
     """Model for conversation response."""
