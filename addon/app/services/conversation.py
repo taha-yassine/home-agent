@@ -35,14 +35,12 @@ def construct_prompt(ctx_wrapper: RunContextWrapper[Any], agent: Agent | None) -
     """Construct prompt for the agent."""
     home_entities = ctx_wrapper.context["home_entities"]
 
-    prompt = dedent(f"""\
+    prompt = dedent("""\
         You are a helpful assistant that helps with tasks around the home. You will be given instructions that you are asked to follow. You can use the tools provided to you to control devices in the home in order to complete the task. When you have completed the task, you should respond with a summary of the task and the result in first person (e.g. I turned on the lights).
-
+        
         Following is a detailed list of entities and devices currently in the home. You can use the `get_state` tool to get the current state of an entity before taking action.
-
-        {home_entities}
-    """)
-
+        """) + "\n" + home_entities
+    
     return prompt
 
 class ConversationService:
