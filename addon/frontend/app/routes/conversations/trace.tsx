@@ -84,9 +84,9 @@ export default function TraceDetail() {
 
   return (
     <div className="w-full">
-      <div className="overflow-hidden border border-gray-200 rounded-lg bg-white">
-        <table className="min-w-full divide-y divide-gray-200 table-fixed">
-          <tbody className="divide-y divide-gray-200 bg-white">
+      <div className="overflow-hidden border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
+        <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 table-fixed">
+          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
             {sortedSpans.map((span) => {
               const isExpanded = expandedSpans[span.id];
               const startTime = new Date(span.started_at).getTime();
@@ -109,10 +109,10 @@ export default function TraceDetail() {
               return (
                 <>
                   <tr key={span.id}>
-                    <td className="w-12 px-3 py-4 text-sm text-gray-500">
+                    <td className="w-12 px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">
                       <button
                         onClick={() => toggleExpand(span.id)}
-                        className="p-1 rounded-full hover:bg-gray-100"
+                        className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"
                       >
                         {isExpanded ? (
                           <ChevronDown className="h-4 w-4" />
@@ -121,16 +121,16 @@ export default function TraceDetail() {
                         )}
                       </button>
                     </td>
-                    <td className="w-72 whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <td className="w-72 whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">
                       <div className="flex items-center">
                         {Icon && <Icon className="h-4 w-4 mr-2" />}
                         {displayName}
                       </div>
                     </td>
-                    <td className="w-32 whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <td className="w-32 whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">
                       {duration}ms
                     </td>
-                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">
                       <div className="relative flex items-center w-full h-4">
                         <div
                           className={`${color} absolute h-2 w-0.5 rounded-full`}
@@ -159,9 +159,9 @@ export default function TraceDetail() {
                     <tr>
                       <td
                         colSpan={4}
-                        className="px-6 py-4 bg-gray-50"
+                        className="px-6 py-4 bg-zinc-50 dark:bg-zinc-900"
                       >
-                        <pre className="text-xs text-gray-700 whitespace-pre-wrap">
+                        <pre className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
                           {JSON.stringify(span.span_data, null, 2)}
                         </pre>
                       </td>
