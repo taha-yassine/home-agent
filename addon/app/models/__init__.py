@@ -1,6 +1,7 @@
 from .conversation import ConversationRequest, ConversationResponse, ConversationList, Conversation
 from .connection import Connection, ConnectionCreate, ConnectionUpdate
 from .trace import Span
+from .tool import Tool
 
 __all__ = [
     "ConversationRequest",
@@ -10,5 +11,6 @@ __all__ = [
     "Span",
     "Connection",
     "ConnectionCreate",
-    "ConnectionUpdate"
+    "ConnectionUpdate",
+    "Tool",
 ]

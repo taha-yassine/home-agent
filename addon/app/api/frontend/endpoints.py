@@ -14,6 +14,7 @@ from ...services import (
     ConversationService,
     ConnectionService,
     TraceService,
+    ToolService,
 )
 
 router = APIRouter()
@@ -104,3 +105,7 @@ async def get_models(db: AsyncSession = Depends(get_db)):
                 status_code=exc.response.status_code, detail=exc.response.text
             )
 
+@router.get("/tools")
+async def get_tools():
+    """Get all tools."""
+    return ToolService.get_tools()

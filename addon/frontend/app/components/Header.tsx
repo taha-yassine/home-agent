@@ -3,6 +3,7 @@ import ThemeToggle from "./ThemeToggle";
 
 const tabs = [
   { name: "Conversations", href: "/conversations" },
+  { name: "Tools", href: "/tools" },
   { name: "Documents", href: "/documents" },
   { name: "Connections", href: "/connections" },
 ];
