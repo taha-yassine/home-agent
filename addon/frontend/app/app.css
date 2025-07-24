@@ -11,7 +11,3 @@ html,
 body {
   @apply bg-white dark:bg-zinc-950;
 }
-
-main {
-  padding: 1rem;
-}

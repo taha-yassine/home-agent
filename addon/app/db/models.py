@@ -3,10 +3,21 @@ from __future__ import annotations
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String
+from sqlalchemy import JSON, DateTime, ForeignKey, String, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+
+
+class Connection(Base):
+    __tablename__ = "connections"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    url: Mapped[str] = mapped_column(String)
+    api_key: Mapped[str | None] = mapped_column(String, nullable=True)
+    backend: Mapped[str] = mapped_column(String)
+    model: Mapped[str | None] = mapped_column(String, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class Trace(Base):

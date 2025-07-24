@@ -8,10 +8,8 @@ from dotenv import load_dotenv
 class Settings(BaseSettings):
     """Application settings."""
     app_env: str = "prod"
-    llm_server_url: str # URL of the LLM inference server
-    llm_server_api_key: str # API key for the LLM inference server
     llm_server_proxy: str | None = None # Proxy for the LLM inference server
-    model_id: str = "generic" # ID of the LLM model to use; some backends ignore this
+    model_id: str = "generic" # ID of the LLM model to use; some connections ignore this
     ha_api_url: str  # Home Assistant API URL
     ha_api_key: str  # Bearer token for Home Assistant authentication
     db_path: Path = Path.home() / ".local" / "share" / "home-agent"
@@ -34,7 +32,7 @@ def get_settings() -> Settings:
     if app_env == "prod":
         return Settings(
             ha_api_url="http://supervisor/core/api",
-            ha_api_key=os.getenv("SUPERVISOR_TOKEN")
-        ) # pyright: ignore
+            ha_api_key=os.getenv("SUPERVISOR_TOKEN") # pyright: ignore
+        )
     else:
         return Settings() # pyright: ignore 

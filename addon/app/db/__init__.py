@@ -1,3 +1,7 @@
-from .models import Span, Trace
+from .models import Span, Trace, Connection
 
-__all__ = ["Span", "Trace"]
+__all__ = [
+    "Span",
+    "Trace",
+    "Connection",
+]

@@ -13,9 +13,6 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-from openai import AsyncOpenAI, DefaultAsyncHttpxClient
-from agents import set_trace_processors
-
 from .tools.hass_tools import get_tools as get_hass_tools
 from .api import router as api_router
 from .db.base import Base
@@ -50,14 +47,6 @@ async def lifespan(app: FastAPI):
     # May need better handling
     db_sync_engine = create_engine(f"sqlite:///{settings.db_path / 'home_agent.db'}")
     
-    openai_client = AsyncOpenAI(
-        base_url=settings.llm_server_url,
-        api_key=settings.llm_server_api_key,
-        http_client=DefaultAsyncHttpxClient(
-            proxy=settings.llm_server_proxy,
-            verify=False
-        )
-    )
     hass_client = httpx.AsyncClient(
         base_url=settings.ha_api_url,
         headers={"Authorization": f"Bearer {settings.ha_api_key}"},
@@ -124,7 +113,6 @@ async def lifespan(app: FastAPI):
         #     _LOGGER.error(f"Error during LLM backend check: {e}")
         
         yield {
-            "openai_client": openai_client,
             "hass_client": hass_client,
             "tools": tools,
             "model_id": settings.model_id,

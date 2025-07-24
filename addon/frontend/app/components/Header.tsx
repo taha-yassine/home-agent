@@ -3,9 +3,8 @@ import ThemeToggle from "./ThemeToggle";
 
 const tabs = [
   { name: "Conversations", href: "/conversations" },
-  { name: "Models", href: "/models" },
   { name: "Documents", href: "/documents" },
-  { name: "Backends", href: "/backends" },
+  { name: "Connections", href: "/connections" },
 ];
 
 export default function Header() {

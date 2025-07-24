@@ -1,7 +1,9 @@
+import PageLayout from "../components/PageLayout";
+
 export default function Documents() {
   return (
-    <main>
+    <PageLayout>
       <h2>Documents</h2>
-    </main>
+    </PageLayout>
   );
 } 

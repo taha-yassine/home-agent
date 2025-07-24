@@ -26,7 +26,9 @@ from ..models import (
     ConversationList,
     ConversationRequest,
     ConversationResponse,
+    Connection,
 )
+from .connection import ConnectionService
 from ..tracing import HASpanExporter
 
 _LOGGER = logging.getLogger('uvicorn.error')
@@ -117,20 +119,30 @@ class ConversationService:
     @staticmethod
     async def process_conversation(
         conversation_request: ConversationRequest,
-        openai_client: AsyncOpenAI,
         hass_client: httpx.AsyncClient,
         tools: List[Tool],
-        model_id: str,
+        db: AsyncSession,
         db_engine: Engine,
     ) -> ConversationResponse:
         """Process a conversation with the agent."""
         set_trace_processors([BatchTraceProcessor(exporter=HASpanExporter(db_engine))])
 
+        active_connection: Connection | None = await ConnectionService.get_active_connection(db, mask_key=False)
+
+        if not active_connection:
+            return ConversationResponse(
+                response="No active connection found. Please configure a connection."
+            )
+
+        # We're constrained to creating a new httpx client for each connection because the base_url can be changed at runtime
         agent = Agent(
             name="Home Agent",
             model=OpenAIChatCompletionsModel(
-                model=model_id,
-                openai_client=openai_client,
+                model=active_connection.model or "generic",
+                openai_client=AsyncOpenAI(
+                    base_url=active_connection.url,
+                    api_key=active_connection.api_key,
+                ),
             ),
             instructions=construct_prompt,
             tools=tools,
