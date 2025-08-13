@@ -1,4 +1,4 @@
-from agents import RunContextWrapper, function_tool
+from agents import RunContextWrapper, function_tool, FunctionTool
 from typing import Any, Optional
 from httpx import AsyncClient, Response
 
@@ -566,7 +566,7 @@ async def get_state(
     
     return response.json()
 
-def get_tools():
+def get_tools() -> list[FunctionTool]:
     return [
         turn_on,
         turn_off,
@@ -587,8 +587,8 @@ def get_tools():
         pause_timer,
         unpause_timer,
         get_timer_status,
-        get_current_date,
-        get_current_time,
+        # get_current_date,
+        # get_current_time,
         get_temperature,
         set_position,
         get_state,

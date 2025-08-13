@@ -1,5 +1,5 @@
 from ..models import Tool
-from ..tools import get_tools
+from ..tools import get_all_tools
 
 class ToolService:
     @staticmethod
@@ -11,5 +11,5 @@ class ToolService:
                 description=tool.description,
                 params_json_schema=tool.params_json_schema,
             )
-            for tool in get_tools()
+            for tool in get_all_tools()
         ]

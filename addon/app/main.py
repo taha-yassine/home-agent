@@ -13,7 +13,7 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-from .tools.hass_tools import get_tools as get_hass_tools
+from .tools import get_all_tools
 from .api import router as api_router
 from .db.base import Base
 from .settings import get_settings
@@ -52,7 +52,9 @@ async def lifespan(app: FastAPI):
         headers={"Authorization": f"Bearer {settings.ha_api_key}"},
         verify=False
     )
-    tools = get_hass_tools()
+
+    # TODO: Optimize tool handling
+    tools = get_all_tools()
 
     try:
         
