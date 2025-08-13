@@ -95,7 +95,26 @@ async def get_models(db: AsyncSession = Depends(get_db)):
         try:
             response = await client.get(f"{active_connection.url}/models")
             response.raise_for_status()
-            return response.json()
+            payload = response.json()
+
+            # For OpenRouter, only keep models supporting tool calls
+            try:
+                if "openrouter" in (active_connection.url or "").lower():
+                    data = payload.get("data") if isinstance(payload, dict) else None
+                    if isinstance(data, list):
+                        filtered = [
+                            m
+                            for m in data
+                            if isinstance(m, dict)
+                            and isinstance(m.get("supported_parameters"), list)
+                            and "tools" in m.get("supported_parameters", [])
+                        ]
+                        payload["data"] = filtered
+            except Exception:
+                # If filtering fails, fall back to unfiltered payload
+                pass
+
+            return payload
         except httpx.RequestError as exc:
             raise HTTPException(
                 status_code=500, detail=f"Error connecting to connection: {exc}"
