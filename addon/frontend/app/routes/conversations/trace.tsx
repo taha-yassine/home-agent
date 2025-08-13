@@ -124,7 +124,14 @@ export default function TraceDetail() {
                     <td className="w-72 whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">
                       <div className="flex items-center">
                         {Icon && <Icon className="h-4 w-4 mr-2" />}
-                        {displayName}
+                        <div>
+                          {displayName}
+                          {spanType === "function" && span.span_data?.name && (
+                            <div className="text-xs text-zinc-400 dark:text-zinc-500">
+                              {span.span_data.name}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="w-32 whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">
