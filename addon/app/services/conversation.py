@@ -135,48 +135,49 @@ class ConversationService:
             )
 
         # We're constrained to creating a new httpx client for each connection because the base_url can be changed at runtime
-        agent = Agent(
-            name="Home Agent",
-            model=OpenAIChatCompletionsModel(
-                model=active_connection.model or "generic",
-                openai_client=AsyncOpenAI(
-                    base_url=active_connection.url,
-                    api_key=active_connection.api_key,
+        async with AsyncOpenAI(
+            base_url=active_connection.url,
+            api_key=active_connection.api_key,
+        ) as openai_client:
+            agent = Agent(
+                name="Home Agent",
+                model=OpenAIChatCompletionsModel(
+                    model=active_connection.model or "generic",
+                    openai_client=openai_client,
                 ),
-            ),
-            instructions=construct_prompt,
-            tools=tools,
-            model_settings=ModelSettings(
-                extra_body={
-                    "chat_template_kwargs": {
-                        "enable_thinking": False,
+                instructions=construct_prompt,
+                tools=tools,
+                model_settings=ModelSettings(
+                    extra_body={
+                        "chat_template_kwargs": {
+                            "enable_thinking": False,
+                        }
                     }
-                }
-            ),
-        )
-
-        home_entities = await ConversationService.fetch_home_entities(hass_client)
-
-        context: Dict[str, Any] = {
-            "conversation_id": conversation_request.conversation_id,
-            "language": conversation_request.language,
-            "home_entities": home_entities,
-            "hass_client": hass_client,
-        }
-
-        input = conversation_request.text
-
-        try:
-            result = await Runner.run(
-                starting_agent=agent,
-                input=input,
-                context=context,
-                max_turns=3,
+                ),
             )
-            return ConversationResponse(response=result.final_output)
 
-        except Exception as e:
-            _LOGGER.error(f"Error processing conversation: {e}")
-            return ConversationResponse(
-                response=f"I apologize, but I encountered an error: {str(e)}"
-            ) 
+            home_entities = await ConversationService.fetch_home_entities(hass_client)
+
+            context: Dict[str, Any] = {
+                "conversation_id": conversation_request.conversation_id,
+                "language": conversation_request.language,
+                "home_entities": home_entities,
+                "hass_client": hass_client,
+            }
+
+            input = conversation_request.text
+
+            try:
+                result = await Runner.run(
+                    starting_agent=agent,
+                    input=input,
+                    context=context,
+                    max_turns=3,
+                )
+                return ConversationResponse(response=result.final_output)
+
+            except Exception as e:
+                _LOGGER.error(f"Error processing conversation: {e}")
+                return ConversationResponse(
+                    response=f"I apologize, but I encountered an error: {str(e)}"
+                )
