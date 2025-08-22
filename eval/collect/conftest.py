@@ -4,6 +4,9 @@ from asgi_lifespan import LifespanManager
 from starlette.types import ASGIApp
 from dotenv import load_dotenv
 from typing import AsyncGenerator
+
+from agents import set_tracing_disabled
+
 from pytest_homeassistant_custom_component.typing import ClientSessionGenerator
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
@@ -17,6 +20,10 @@ pytest_plugins = [
 def load_env():
     """Load environment variables from .env files."""
     load_dotenv()
+
+@pytest.fixture(autouse=True)
+def disable_tracing():
+    set_tracing_disabled(True)
 
 @pytest_asyncio.fixture
 async def setup_hass_components(hass: HomeAssistant):

@@ -89,7 +89,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", specifier = ">=0.27.2" },
     { name = "jsonschema", specifier = ">=4.24.0" },
-    { name = "openai-agents", specifier = ">=0.0.7" },
+    { name = "openai-agents", specifier = ">=0.2.8" },
     { name = "openinference-instrumentation-openai-agents", specifier = ">=0.1.7" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = "==2.7.1" },
@@ -2742,24 +2742,52 @@ wheels = [
 
 [[package]]
 name = "mcp"
-version = "1.10.1"
+version = "1.12.4"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "anyio" },
-    { name = "httpx" },
-    { name = "httpx-sse" },
-    { name = "jsonschema" },
-    { name = "pydantic", version = "2.10.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13.2'" },
-    { name = "pydantic", version = "2.11.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13.2'" },
-    { name = "pydantic-settings" },
-    { name = "python-multipart" },
-    { name = "sse-starlette" },
-    { name = "starlette" },
-    { name = "uvicorn", marker = "sys_platform != 'emscripten'" },
+resolution-markers = [
+    "python_full_version < '3.13.2'",
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7c/68/63045305f29ff680a9cd5be360c755270109e6b76f696ea6824547ddbc30/mcp-1.10.1.tar.gz", hash = "sha256:aaa0957d8307feeff180da2d9d359f2b801f35c0c67f1882136239055ef034c2", size = 392969, upload-time = "2025-06-27T12:03:08.982Z" }
+dependencies = [
+    { name = "anyio", marker = "python_full_version < '3.13.2'" },
+    { name = "httpx", marker = "python_full_version < '3.13.2'" },
+    { name = "httpx-sse", marker = "python_full_version < '3.13.2'" },
+    { name = "jsonschema", marker = "python_full_version < '3.13.2'" },
+    { name = "pydantic", version = "2.10.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13.2'" },
+    { name = "pydantic-settings", marker = "python_full_version < '3.13.2'" },
+    { name = "python-multipart", marker = "python_full_version < '3.13.2'" },
+    { name = "pywin32", marker = "python_full_version < '3.13.2' and sys_platform == 'win32'" },
+    { name = "sse-starlette", marker = "python_full_version < '3.13.2'" },
+    { name = "starlette", marker = "python_full_version < '3.13.2'" },
+    { name = "uvicorn", marker = "python_full_version < '3.13.2' and sys_platform != 'emscripten'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/31/88/f6cb7e7c260cd4b4ce375f2b1614b33ce401f63af0f49f7141a2e9bf0a45/mcp-1.12.4.tar.gz", hash = "sha256:0765585e9a3a5916a3c3ab8659330e493adc7bd8b2ca6120c2d7a0c43e034ca5", size = 431148, upload-time = "2025-08-07T20:31:18.082Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/3f/435a5b3d10ae242a9d6c2b33175551173c3c61fe637dc893be05c4ed0aaf/mcp-1.10.1-py3-none-any.whl", hash = "sha256:4d08301aefe906dce0fa482289db55ce1db831e3e67212e65b5e23ad8454b3c5", size = 150878, upload-time = "2025-06-27T12:03:07.328Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/68/316cbc54b7163fa22571dcf42c9cc46562aae0a021b974e0a8141e897200/mcp-1.12.4-py3-none-any.whl", hash = "sha256:7aa884648969fab8e78b89399d59a683202972e12e6bc9a1c88ce7eda7743789", size = 160145, upload-time = "2025-08-07T20:31:15.69Z" },
+]
+
+[[package]]
+name = "mcp"
+version = "1.13.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.13.2'",
+]
+dependencies = [
+    { name = "anyio", marker = "python_full_version >= '3.13.2'" },
+    { name = "httpx", marker = "python_full_version >= '3.13.2'" },
+    { name = "httpx-sse", marker = "python_full_version >= '3.13.2'" },
+    { name = "jsonschema", marker = "python_full_version >= '3.13.2'" },
+    { name = "pydantic", version = "2.11.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13.2'" },
+    { name = "pydantic-settings", marker = "python_full_version >= '3.13.2'" },
+    { name = "python-multipart", marker = "python_full_version >= '3.13.2'" },
+    { name = "pywin32", marker = "python_full_version >= '3.13.2' and sys_platform == 'win32'" },
+    { name = "sse-starlette", marker = "python_full_version >= '3.13.2'" },
+    { name = "starlette", marker = "python_full_version >= '3.13.2'" },
+    { name = "uvicorn", marker = "python_full_version >= '3.13.2' and sys_platform != 'emscripten'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d3/a8/564c094de5d6199f727f5d9f5672dbec3b00dfafd0f67bf52d995eaa5951/mcp-1.13.0.tar.gz", hash = "sha256:70452f56f74662a94eb72ac5feb93997b35995e389b3a3a574e078bed2aa9ab3", size = 434709, upload-time = "2025-08-14T15:03:58.58Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8b/6b/46b8bcefc2ee9e2d2e8d2bd25f1c2512f5a879fac4619d716b194d6e7ccc/mcp-1.13.0-py3-none-any.whl", hash = "sha256:8b1a002ebe6e17e894ec74d1943cc09aa9d23cb931bf58d49ab2e9fa6bb17e4b", size = 160226, upload-time = "2025-08-14T15:03:56.641Z" },
 ]
 
 [[package]]
@@ -2953,7 +2981,7 @@ wheels = [
 
 [[package]]
 name = "openai"
-version = "1.93.0"
+version = "1.101.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -2966,18 +2994,19 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e4/d7/e91c6a9cf71726420cddf539852ee4c29176ebb716a702d9118d0409fd8e/openai-1.93.0.tar.gz", hash = "sha256:988f31ade95e1ff0585af11cc5a64510225e4f5cd392698c675d0a9265b8e337", size = 486573, upload-time = "2025-06-27T21:21:39.421Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/00/7c/eaf06b62281f5ca4f774c4cff066e6ddfd6a027e0ac791be16acec3a95e3/openai-1.101.0.tar.gz", hash = "sha256:29f56df2236069686e64aca0e13c24a4ec310545afb25ef7da2ab1a18523f22d", size = 518415, upload-time = "2025-08-21T21:11:01.645Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/64/46/a10d9df4673df56f71201d129ba1cb19eaff3366d08c8664d61a7df52e65/openai-1.93.0-py3-none-any.whl", hash = "sha256:3d746fe5498f0dd72e0d9ab706f26c91c0f646bf7459e5629af8ba7c9dbdf090", size = 755038, upload-time = "2025-06-27T21:21:37.532Z" },
+    { url = "https://files.pythonhosted.org/packages/c8/a6/0e39baa335bbd1c66c7e0a41dbbec10c5a15ab95c1344e7f7beb28eee65a/openai-1.101.0-py3-none-any.whl", hash = "sha256:6539a446cce154f8d9fb42757acdfd3ed9357ab0d34fcac11096c461da87133b", size = 810772, upload-time = "2025-08-21T21:10:59.215Z" },
 ]
 
 [[package]]
 name = "openai-agents"
-version = "0.1.0"
+version = "0.2.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "griffe" },
-    { name = "mcp" },
+    { name = "mcp", version = "1.12.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13.2'" },
+    { name = "mcp", version = "1.13.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13.2'" },
     { name = "openai" },
     { name = "pydantic", version = "2.10.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13.2'" },
     { name = "pydantic", version = "2.11.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13.2'" },
@@ -2986,9 +3015,9 @@ dependencies = [
     { name = "types-requests" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/99/f8/a292d8f506997355755d88db619966539ec838ce18f070c5a101e5a430ec/openai_agents-0.1.0.tar.gz", hash = "sha256:a697a4fdd881a7a16db8c0dcafba0f17d9e90b6236a4b79923bd043b6ae86d80", size = 1379588, upload-time = "2025-06-27T20:58:03.186Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0b/a2/d088d750847dde8e4253c23b86c9a176f865e4aee74c5d8b21d01c9605cd/openai_agents-0.2.8.tar.gz", hash = "sha256:351942d11becb7ac6401d1d3c4fb7a2e8859d721f4b22d1583103a1589548235", size = 1496613, upload-time = "2025-08-15T23:23:59.821Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/5b/326e6b1b661dbef718977a8379f9702a4eec1df772450517870beeb3af35/openai_agents-0.1.0-py3-none-any.whl", hash = "sha256:6a8ef71d3f20aecba0f01bca2e059590d1c23f5adc02d780cb5921ea8a7ca774", size = 130620, upload-time = "2025-06-27T20:58:01.461Z" },
+    { url = "https://files.pythonhosted.org/packages/57/be/87d174b8d0709a729a4c2ef8a3e6517ea78e9f289972d6cc3b626f8d7c4b/openai_agents-0.2.8-py3-none-any.whl", hash = "sha256:43e9007b236c5be647a8407476d698aa71f738852e35b07c705c23772163cfbf", size = 168504, upload-time = "2025-08-15T23:23:58.033Z" },
 ]
 
 [[package]]
