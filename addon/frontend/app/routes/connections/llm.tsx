@@ -22,8 +22,9 @@ import {
   MenuItem,
   MenuItems,
 } from "@headlessui/react";
-import { Check, ChevronDown, MoreVertical, Trash2 } from "lucide-react";
-import PageLayout from "../components/PageLayout";
+import { Check, ChevronDown, MoreVertical, Trash2, AlertCircle } from "lucide-react";
+import PageLayout from "../../components/PageLayout";
+import Breadcrumbs from "../../components/Breadcrumbs";
 
 interface Connection {
   id: number;
@@ -46,7 +47,7 @@ const backendOptions = [
   { id: "openai", name: "OpenAI-compatible" },
 ];
 
-export default function Connections() {
+export default function ConnectionsLlm() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +63,7 @@ export default function Connections() {
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const [isAddConnectionOpen, setIsAddConnectionOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [modelsError, setModelsError] = useState<string | null>(null);
 
   const inputClasses =
     "mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-sm/6 ring-1 ring-inset ring-zinc-300 dark:ring-zinc-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-zinc-500";
@@ -96,17 +98,19 @@ export default function Connections() {
   async function fetchModels() {
     if (!selectedConnection) return;
     try {
+      setModelsError(null);
       const response = await fetch("/api/frontend/models");
       if (!response.ok) {
         throw new Error("Failed to fetch models");
       }
       const data = await response.json();
       setModels(data.data);
+      setModelsError(null);
     } catch (err) {
       if (err instanceof Error) {
-        setError(err.message);
+        setModelsError(err.message);
       } else {
-        setError("An unknown error occurred");
+        setModelsError("An unknown error occurred");
       }
     }
   }
@@ -306,48 +310,55 @@ export default function Connections() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
                   {connection.is_active ? (
-                    <Combobox
-                      as="div"
-                      value={selectedModel}
-                      onChange={handleModelChange}
-                      onClose={() => setQuery("")}
-                    >
-                      <div className="relative">
-                        <ComboboxInput
-                          className="w-full rounded-md border-0 bg-white dark:bg-zinc-950 py-1.5 pl-3 pr-10 text-zinc-900 dark:text-zinc-100 ring-1 ring-inset ring-zinc-300 dark:ring-zinc-700 focus:outline-none sm:text-sm sm:leading-6"
-                          onChange={(event) => setQuery(event.target.value)}
-                          displayValue={(model: Model) => model?.id || ""}
-                        />
-                        <ComboboxButton className="cursor-pointer group absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
-                          <ChevronDown
-                            className="h-5 w-5 text-zinc-400 group-data-hover:text-zinc-600"
-                            aria-hidden="true"
-                          />
-                        </ComboboxButton>
+                    modelsError ? (
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" aria-hidden="true" />
+                        <span className="text-sm text-red-600 dark:text-red-400">{modelsError}</span>
                       </div>
-
-                      <ComboboxOptions
-                        transition
-                        anchor="bottom"
-                        className="w-[var(--input-width)] z-10 mt-1 !max-h-60 overflow-auto rounded-md bg-white dark:bg-zinc-900 p-1 text-base shadow-lg ring-1 ring-zinc-300 dark:ring-zinc-700 focus:outline-none sm:text-sm empty:invisible transition duration-100 ease-in data-leave:data-closed:opacity-0 [--anchor-gap:theme(spacing.1)]"
+                    ) : (
+                      <Combobox
+                        as="div"
+                        value={selectedModel}
+                        onChange={handleModelChange}
+                        onClose={() => setQuery("")}
                       >
-                        {filteredModels.map((model) => (
-                          <ComboboxOption
-                            key={model.id}
-                            value={model}
-                            className="group flex cursor-pointer items-center gap-2 rounded-md py-1.5 px-3 select-none data-focus:bg-zinc-100 dark:data-focus:bg-zinc-800"
-                          >
-                            <Check
-                              className="invisible size-4 text-zinc-600 dark:text-zinc-300 group-data-selected:visible"
+                        <div className="relative">
+                          <ComboboxInput
+                            className="w-full rounded-md border-0 bg-white dark:bg-zinc-950 py-1.5 pl-3 pr-10 text-zinc-900 dark:text-zinc-100 ring-1 ring-inset ring-zinc-300 dark:ring-zinc-700 focus:outline-none sm:text-sm sm:leading-6"
+                            onChange={(event) => setQuery(event.target.value)}
+                            displayValue={(model: Model) => model?.id || ""}
+                          />
+                          <ComboboxButton className="cursor-pointer group absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
+                            <ChevronDown
+                              className="h-5 w-5 text-zinc-400 group-data-hover:text-zinc-600"
                               aria-hidden="true"
                             />
-                            <span className="text-sm text-zinc-900 dark:text-zinc-100">
-                              {model.id}
-                            </span>
-                          </ComboboxOption>
-                        ))}
-                      </ComboboxOptions>
-                    </Combobox>
+                          </ComboboxButton>
+                        </div>
+
+                        <ComboboxOptions
+                          transition
+                          anchor="bottom"
+                          className="w-[var(--input-width)] z-10 mt-1 !max-h-60 overflow-auto rounded-md bg-white dark:bg-zinc-900 p-1 text-base shadow-lg ring-1 ring-zinc-300 dark:ring-zinc-700 focus:outline-none sm:text-sm empty:invisible transition duration-100 ease-in data-leave:data-closed:opacity-0 [--anchor-gap:theme(spacing.1)]"
+                        >
+                          {filteredModels.map((model) => (
+                            <ComboboxOption
+                              key={model.id}
+                              value={model}
+                              className="group flex cursor-pointer items-center gap-2 rounded-md py-1.5 px-3 select-none data-focus:bg-zinc-100 dark:data-focus:bg-zinc-800"
+                            >
+                              <Check
+                                className="invisible size-4 text-zinc-600 dark:text-zinc-300 group-data-selected:visible"
+                                aria-hidden="true"
+                              />
+                              <span className="text-sm text-zinc-900 dark:text-zinc-100">
+                                {model.id}
+                              </span>
+                            </ComboboxOption>
+                          ))}
+                        </ComboboxOptions>
+                      </Combobox>
+                    )
                   ) : (
                     <span>{connection.model || "N/A"}</span>
                   )}
@@ -372,24 +383,13 @@ export default function Connections() {
                     >
                       <div className="px-1 py-1">
                         <MenuItem>
-                          {({ active }) => (
-                            <button
-                              onClick={() =>
-                                handleDeleteConnection(connection.id)
-                              }
-                              className={`${
-                                active
-                                  ? "bg-zinc-100 dark:bg-zinc-800 text-red-900 dark:text-red-200"
-                                  : "text-red-700 dark:text-red-400"
-                              } group flex w-full items-center rounded-md px-2 py-2 text-sm cursor-pointer`}
-                            >
-                              <Trash2
-                                className="mr-2 h-5 w-5"
-                                aria-hidden="true"
-                              />
-                              Delete
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleDeleteConnection(connection.id)}
+                            className="group flex w-full items-center rounded-md px-2 py-2 text-sm cursor-pointer text-red-700 dark:text-red-400 data-[focus]:bg-zinc-100 dark:data-[focus]:bg-zinc-800 data-[focus]:text-red-900 dark:data-[focus]:text-red-200"
+                          >
+                            <Trash2 className="mr-2 h-5 w-5" aria-hidden="true" />
+                            Delete
+                          </button>
                         </MenuItem>
                       </div>
                     </MenuItems>
