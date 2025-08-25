@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict, List
 import httpx
 from openai import AsyncOpenAI
+from openai.types.responses import ResponseTextDeltaEvent
 from sqlalchemy import Engine, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
@@ -123,16 +124,15 @@ class ConversationService:
         tools: List[Tool],
         db: AsyncSession,
         db_engine: Engine,
-    ) -> ConversationResponse:
+    ):
         """Process a conversation with the agent."""
         set_trace_processors([BatchTraceProcessor(exporter=HASpanExporter(db_engine))])
 
         active_connection: Connection | None = await ConnectionService.get_active_connection(db, mask_key=False)
 
         if not active_connection:
-            return ConversationResponse(
-                response="No active connection found. Please configure a connection."
-            )
+            yield "No active connection found. Please configure a connection."
+            return
 
         # We're constrained to creating a new httpx client for each connection because the base_url can be changed at runtime
         async with AsyncOpenAI(
@@ -168,16 +168,17 @@ class ConversationService:
             input = conversation_request.text
 
             try:
-                result = await Runner.run(
+                result = Runner.run_streamed(
                     starting_agent=agent,
                     input=input,
                     context=context,
                     max_turns=3,
                 )
-                return ConversationResponse(response=result.final_output)
+                async for event in result.stream_events():
+                    if event.type == "raw_response_event" and isinstance(event.data, ResponseTextDeltaEvent):
+                        yield event.data.delta
 
+                yield ""
             except Exception as e:
-                _LOGGER.error(f"Error processing conversation: {e}")
-                return ConversationResponse(
-                    response=f"I apologize, but I encountered an error: {str(e)}"
-                )
+                _LOGGER.error(f"Error streaming conversation: {e}")
+                yield f"I apologize, but I encountered an error: {str(e)}"

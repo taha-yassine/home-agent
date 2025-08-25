@@ -31,6 +31,8 @@ from .const import (
     DEFAULT_MAX_HISTORY,
     DOMAIN,
     MAX_HISTORY_SECONDS,
+    CONF_STREAMING,
+    DEFAULT_STREAMING,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -65,6 +67,7 @@ class HomeAgentConversationEntity(
     """Home Agent conversation agent."""
 
     _attr_has_entity_name = True
+    _attr_supports_streaming = True
 
     def __init__(self, entry: ConfigEntry) -> None:
         """Initialize the agent."""
@@ -79,13 +82,7 @@ class HomeAgentConversationEntity(
     async def async_added_to_hass(self) -> None:
         """When entity is added to Home Assistant."""
         await super().async_added_to_hass()
-        assist_pipeline.async_migrate_engine(
-            self.hass, "conversation", self.entry.entry_id, self.entity_id
-        )
         conversation.async_set_agent(self.hass, self.entry, self)
-        self.entry.async_on_unload(
-            self.entry.add_update_listener(self._async_entry_update_listener)
-        )
 
     async def async_will_remove_from_hass(self) -> None:
         """When entity will be removed from Home Assistant."""
@@ -103,42 +100,82 @@ class HomeAgentConversationEntity(
         chat_log: conversation.ChatLog,
     ) -> conversation.ConversationResult:
         """Process a sentence."""
-        conversation_id = user_input.conversation_id or ulid.ulid_now()
-        intent_response = intent.IntentResponse(language=user_input.language)
-
-        # Get the client from hass.data
         client: httpx.AsyncClient = self.hass.data[DOMAIN][self.entry.entry_id]
 
-        try:
-            # Forward the conversation to the add-on with additional LLM context
-            payload = {
-                "text": user_input.text,
-                "conversation_id": conversation_id,
-                "language": user_input.language,
-            }
+        payload = {
+            "text": user_input.text,
+            "conversation_id": user_input.conversation_id or ulid.ulid_now(),
+            "language": user_input.language,
+        }
 
-            response = await client.post(
-                "/api/agent/conversation",
-                json=payload,
+        try:
+            await chat_log.async_provide_llm_data(
+                user_input.as_llm_context(DOMAIN),
+                self.entry.options.get(CONF_LLM_HASS_API),
+                None,
+                user_input.extra_system_prompt,
             )
-            if response.status_code != 200:
-                raise HomeAssistantError(
-                    f"Error from add-on: {response.status_code} {response.text}"
+        except conversation.ConverseError as err:
+            return err.as_conversation_result()
+
+        streaming = self.entry.options.get(CONF_STREAMING, DEFAULT_STREAMING)
+
+        try:
+            if streaming:
+                async with client.stream(
+                    "POST",
+                    "/api/agent/conversation",
+                    params={"stream": True},
+                    json=payload,
+                ) as response:
+                    if response.status_code != 200:
+                        error_text = (
+                            (await response.aread()).decode()
+                            if response.content is None
+                            else response.text
+                        )
+                        raise HomeAssistantError(
+                            f"Error from add-on: {response.status_code} {error_text}"
+                        )
+
+                    async def _delta_stream():
+                        """Yield assistant deltas from HTTP stream (text only)."""
+                        new_message = True
+                        async for chunk in response.aiter_text():
+                            if new_message:
+                                new_message = False
+                                yield {"role": "assistant"}
+                            if chunk:
+                                yield {"content": chunk}
+
+                    async for _ in chat_log.async_add_delta_content_stream(
+                        self.entity_id, _delta_stream()
+                    ):
+                        pass
+            else:
+                resp = await client.post(
+                    "/api/agent/conversation",
+                    params={"stream": False},
+                    json=payload,
+                )
+                if resp.status_code != 200:
+                    raise HomeAssistantError(
+                        f"Error from add-on: {resp.status_code} {resp.text}"
+                    )
+                data = resp.json()
+                chat_log.async_add_assistant_content_without_tools(
+                    conversation.AssistantContent(
+                        agent_id=self.entity_id, content=data.get("response", "")
+                    )
                 )
 
-            result = response.json()
-            intent_response.async_set_speech(result["response"])
-
         except (httpx.HTTPError, TimeoutError) as err:
-            _LOGGER.error("Failed to communicate with Home Agent add-on: %s", err)
-            intent_response.async_set_error(
-                intent.IntentResponseErrorCode.UNKNOWN,
-                f"Failed to communicate with Home Agent: {err}",
-            )
+            _LOGGER.error("Failed to communicate with Home Agent: %s", err)
+            raise HomeAssistantError(
+                f"Failed to communicate with Home Agent: {err}"
+            ) from err
 
-        return conversation.ConversationResult(
-            response=intent_response, conversation_id=conversation_id
-        )
+        return conversation.async_get_result_from_chat_log(user_input, chat_log)
 
     async def _async_entry_update_listener(
         self, hass: HomeAssistant, entry: ConfigEntry
