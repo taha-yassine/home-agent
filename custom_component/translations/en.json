@@ -1,0 +1,22 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Home Agent is already configured."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "data": {
+                    "llm_hass_api": "Control Home Assistant",
+                    "streaming": "Stream responses"
+                },
+                "data_description": {
+                    "streaming": "Stream tokens as they arrive instead of waiting for the full response. Current limitation: intermediate messages are also streamed."
+                }
+            }
+        }
+    }
+}
+
+

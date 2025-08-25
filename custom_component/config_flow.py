@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 import voluptuous as vol
 
@@ -13,20 +12,20 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.const import CONF_LLM_HASS_API
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 from homeassistant.helpers.selector import (
-    TextSelector,
-    TextSelectorConfig,
-    TextSelectorType,
+    BooleanSelector,
+    BooleanSelectorConfig,
+    SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
-    SelectOptionDict,
 )
 
-from .const import DOMAIN
-
-_LOGGER = logging.getLogger(__name__)
+from .const import (
+    DOMAIN,
+    CONF_STREAMING,
+    DEFAULT_STREAMING,
+)
 
 
 class HomeAgentConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -38,8 +37,8 @@ class HomeAgentConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the initial step."""
-        if self._async_current_entries():
-            return self.async_abort(reason="single_instance_allowed")
+        await self.async_set_unique_id(DOMAIN)
+        self._abort_if_unique_id_configured()
 
         return self.async_create_entry(title="Home Agent", data={})
 
@@ -56,41 +55,38 @@ class HomeAgentOptionsFlow(OptionsFlow):
 
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry  # TODO: deprecated, fix this
+        self._options = dict(config_entry.options)
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options."""
         if user_input is not None:
-            if user_input[CONF_LLM_HASS_API] == "none":
-                user_input.pop(CONF_LLM_HASS_API)
             return self.async_create_entry(title="", data=user_input)
+
+        current_llm_option = self._options.get(CONF_LLM_HASS_API)
+        if current_llm_option == "none":
+            current_llm_option = None
 
         schema = {
             vol.Optional(
                 CONF_LLM_HASS_API,
-                description={
-                    "suggested_value": self.config_entry.options.get(CONF_LLM_HASS_API)
-                },
-                default="none",
+                description={"suggested_value": current_llm_option},
             ): SelectSelector(
                 SelectSelectorConfig(
                     options=[
-                        SelectOptionDict(
-                            label="No control",
-                            value="none",
+                        SelectOptionDict(label=api.name, value=api.id)
+                        for api in sorted(
+                            llm.async_get_apis(self.hass), key=lambda a: a.name
                         )
-                    ]
-                    + [
-                        SelectOptionDict(
-                            label=api.name,
-                            value=api.id,
-                        )
-                        for api in llm.async_get_apis(self.hass)
-                    ]
+                    ],
+                    multiple=True,
                 )
             ),
+            vol.Optional(
+                CONF_STREAMING,
+                default=self._options.get(CONF_STREAMING, DEFAULT_STREAMING),
+            ): BooleanSelector(BooleanSelectorConfig()),
         }
 
         return self.async_show_form(
