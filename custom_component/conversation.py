@@ -100,7 +100,7 @@ class HomeAgentConversationEntity(
         chat_log: conversation.ChatLog,
     ) -> conversation.ConversationResult:
         """Process a sentence."""
-        client: httpx.AsyncClient = self.hass.data[DOMAIN][self.entry.entry_id]
+        client: httpx.AsyncClient = self.entry.runtime_data
 
         payload = {
             "text": user_input.text,

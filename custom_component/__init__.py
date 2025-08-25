@@ -17,7 +17,7 @@ from .api import async_register_api_endpoints
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.CONVERSATION]
+PLATFORMS: tuple[Platform, ...] = (Platform.CONVERSATION,)
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -27,26 +27,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Create client
     client = httpx.AsyncClient(
         base_url=ADDON_URL,
+        timeout=httpx.Timeout(None),  # TODO: Modify once streaming is implemented
     )
 
-    # Test connection to add-on
-    # try:
-    #     async with client.get(f"{addon_url}/api/health") as response:
-    #         if response.status != 200:
-    #             raise ConfigEntryNotReady(
-    #                 f"Failed to connect to Home Agent add-on: {response.status}"
-    #             )
-    # except httpx.HTTPError as err:
-    #     await client.aclose()
-    #     raise ConfigEntryNotReady(
-    #         f"Failed to connect to Home Agent add-on: {err}"
-    #     ) from err
+    # Store the client on the config entry
+    entry.runtime_data = client
 
-    # Store the client in hass.data
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = client
+    # TODO: Enable connectivity testing for the add-on
+    # try:
+    #     async with asyncio.timeout(10):
+    #         resp = await client.get("/api/health")
+    #         resp.raise_for_status()
+    # except (TimeoutError, httpx.ConnectError, httpx.HTTPError) as err:
+    #     await client.aclose()
+    #     raise ConfigEntryNotReady(err) from err
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Reload entry on options update
+    entry.async_on_unload(entry.add_update_listener(async_update_options))
 
     # Register API endpoint
     async_register_api_endpoints(hass)
@@ -54,10 +54,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+async def async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Update options by reloading the config entry."""
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload Home Agent."""
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         # Close the client when unloading
-        client = hass.data[DOMAIN].pop(entry.entry_id)
+        client = entry.runtime_data
         await client.aclose()
     return unload_ok
