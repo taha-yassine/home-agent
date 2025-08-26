@@ -1,9 +1,12 @@
-import PageLayout from "../components/PageLayout";
+import Breadcrumbs from "../components/Breadcrumbs";
 
 export default function Documents() {
   return (
-    <PageLayout>
+    <>
+      <div className="flex justify-between items-center mb-4 min-h-10">
+        <Breadcrumbs />
+      </div>
       <h2>Documents</h2>
-    </PageLayout>
+    </>
   );
 } 

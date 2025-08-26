@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import TimeAgo from "timeago-react";
 import { SquareChartGantt } from "lucide-react";
+import Breadcrumbs from "../../components/Breadcrumbs";
 
 interface Conversation {
   id: string;
@@ -46,6 +47,10 @@ export default function Conversations() {
   }
 
   return (
+    <>
+      <div className="flex justify-between items-center mb-4 min-h-10">
+        <Breadcrumbs />
+      </div>
     <div className="overflow-hidden border border-zinc-200 dark:border-zinc-800 rounded-lg">
       <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
         <thead className="bg-zinc-50 dark:bg-zinc-900">
@@ -103,5 +108,6 @@ export default function Conversations() {
         </tbody>
       </table>
     </div>
+    </>
   );
 } 

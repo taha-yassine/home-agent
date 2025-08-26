@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import PageLayout from "../components/PageLayout";
 import SchemaViewer from "../components/SchemaViewer";
+import Breadcrumbs from "../components/Breadcrumbs";
 
 interface Tool {
   name: string;
@@ -46,7 +47,10 @@ export default function Tools() {
   }
 
   return (
-    <PageLayout>
+    <>
+      <div className="flex justify-between items-center mb-4 min-h-10">
+        <Breadcrumbs />
+      </div>
       <div className="overflow-hidden border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
         <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
           <thead className="bg-zinc-50 dark:bg-zinc-900">
@@ -67,7 +71,7 @@ export default function Tools() {
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider"
               >
-                Parameters (JSON Schema)
+                Parameters
               </th>
             </tr>
           </thead>
@@ -88,6 +92,6 @@ export default function Tools() {
           </tbody>
         </table>
       </div>
-    </PageLayout>
+    </>
   );
 } 

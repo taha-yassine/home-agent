@@ -1,10 +1,12 @@
-import PageLayout from "../../components/PageLayout";
 import Breadcrumbs from "../../components/Breadcrumbs";
 
 export default function ConnectionsMcp() {
   return (
-    <PageLayout>
+    <>
+      <div className="flex justify-between items-center mb-4 min-h-10">
+        <Breadcrumbs />
+      </div>
       <div>WIP</div>
-    </PageLayout>
+    </>
   );
 } 

@@ -2,6 +2,7 @@ import { useParams } from "react-router";
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Drill, Text } from "lucide-react";
 import type { Span } from "../../types";
+import Breadcrumbs from "../../components/Breadcrumbs";
 
 const typeDisplayConfig: Record<
   string,
@@ -83,6 +84,10 @@ export default function TraceDetail() {
   }
 
   return (
+    <>
+      <div className="flex justify-between items-center mb-4 min-h-10">
+        <Breadcrumbs />
+      </div>
     <div className="w-full">
       <div className="overflow-hidden border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
         <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 table-fixed">
@@ -181,5 +186,6 @@ export default function TraceDetail() {
         </table>
       </div>
     </div>
+    </>
   );
 } 

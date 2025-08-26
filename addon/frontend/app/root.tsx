@@ -46,7 +46,9 @@ export default function App() {
   return (
     <>
       <Header />
-      <Outlet />
+      <main className="p-8 container mx-auto">
+        <Outlet />
+      </main>
     </>
   );
 }

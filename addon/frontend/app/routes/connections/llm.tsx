@@ -23,7 +23,6 @@ import {
   MenuItems,
 } from "@headlessui/react";
 import { Check, ChevronDown, MoreVertical, Trash2, AlertCircle } from "lucide-react";
-import PageLayout from "../../components/PageLayout";
 import Breadcrumbs from "../../components/Breadcrumbs";
 
 interface Connection {
@@ -247,16 +246,16 @@ export default function ConnectionsLlm() {
   }
 
   return (
-    <PageLayout
-      actions={
+    <>
+      <div className="flex justify-between items-center mb-4 min-h-10">
+        <Breadcrumbs />
         <button
           onClick={() => setIsAddConnectionOpen(true)}
           className="cursor-pointer inline-flex justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:focus:ring-zinc-700 dark:focus:ring-offset-zinc-950"
         >
           Add Connection
         </button>
-      }
-    >
+      </div>
       {/* TODO: Find a way to reconcile overflow-hidden and the dropdown menu */}
       <div className="overflow-hidden border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
         <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -545,6 +544,6 @@ export default function ConnectionsLlm() {
           </div>
         </div>
       </Dialog>
-    </PageLayout>
+    </>
   );
 } 
