@@ -1,4 +1,4 @@
-import { Sun, Moon, Monitor, SunMoon } from "lucide-react";
+import { Sun, Moon, Monitor } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 
 export default function ThemeToggle() {
@@ -11,7 +11,7 @@ export default function ThemeToggle() {
       case "dark":
         return <Moon className="w-5 h-5" />;
       case "system":
-        return <SunMoon className="w-5 h-5" />;
+        return <Monitor className="w-5 h-5" />;
     }
   };
 
