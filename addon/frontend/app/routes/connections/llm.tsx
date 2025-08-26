@@ -23,6 +23,7 @@ import {
   MenuItems,
 } from "@headlessui/react";
 import { Check, ChevronDown, MoreVertical, Trash2, AlertCircle } from "lucide-react";
+import Loading from "../../components/Loading";
 import Breadcrumbs from "../../components/Breadcrumbs";
 
 interface Connection {
@@ -238,7 +239,7 @@ export default function ConnectionsLlm() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   if (error) {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import PageLayout from "../components/PageLayout";
+import Loading from "../components/Loading";
 import SchemaViewer from "../components/SchemaViewer";
 import Breadcrumbs from "../components/Breadcrumbs";
 
@@ -39,7 +39,7 @@ export default function Tools() {
   }
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   if (error) {

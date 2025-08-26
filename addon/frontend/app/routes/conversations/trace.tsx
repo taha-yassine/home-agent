@@ -1,6 +1,7 @@
 import { useParams } from "react-router";
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Drill, Text } from "lucide-react";
+import Loading from "../../components/Loading";
 import type { Span } from "../../types";
 import Breadcrumbs from "../../components/Breadcrumbs";
 
@@ -76,7 +77,7 @@ export default function TraceDetail() {
   const totalDuration = maxTime - minTime;
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   if (error) {
