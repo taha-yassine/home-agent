@@ -1,3 +1,12 @@
+FROM node:20-bullseye-slim AS frontend
+
+WORKDIR /frontend
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend ./
+RUN npm run build
+
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
@@ -21,17 +30,11 @@ RUN uv python install
 COPY uv.lock pyproject.toml ./
 RUN uv sync --locked --no-install-project --no-build
 
-
-# Install requirements for add-on
-# RUN \
-#   apk add --no-cache \
-#     example_alpine_package
-
 COPY . /app
+COPY --from=frontend /frontend/build /app/frontend/build
 RUN chmod +x /app/run.sh
 
 # Parsing the add-on config
 # ENV CONFIG_PATH=/data/options.json
 
-# CMD ["tail", "-f", "/dev/null"]
 CMD [ "/app/run.sh" ]
