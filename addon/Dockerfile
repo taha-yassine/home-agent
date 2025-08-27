@@ -1,3 +1,5 @@
+ARG BUILD_FROM
+
 FROM node:20-bullseye-slim AS frontend
 
 WORKDIR /frontend
@@ -7,7 +9,6 @@ RUN npm ci
 COPY frontend ./
 RUN npm run build
 
-ARG BUILD_FROM
 FROM $BUILD_FROM
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
