@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     model_id: str = "generic" # ID of the LLM model to use; some connections ignore this
     ha_api_url: str  # Home Assistant API URL
     ha_api_key: str  # Bearer token for Home Assistant authentication
-    db_path: Path = Path.home() / ".local" / "share" / "home-agent"
+    db_path: Path
 
     model_config = SettingsConfigDict(
         env_prefix="HOME_AGENT_",
@@ -32,7 +32,8 @@ def get_settings() -> Settings:
     if app_env == "prod":
         return Settings(
             ha_api_url="http://supervisor/core/api",
-            ha_api_key=os.getenv("SUPERVISOR_TOKEN") # pyright: ignore
+            ha_api_key=os.getenv("SUPERVISOR_TOKEN"), # pyright: ignore
+            db_path="/data",
         )
     else:
         return Settings() # pyright: ignore 
