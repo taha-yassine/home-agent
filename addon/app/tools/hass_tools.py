@@ -319,19 +319,19 @@ async def get_current_time(
 @function_tool
 async def get_temperature(
     ctx_wrapper: RunContextWrapper[Any],
-    name: Optional[str] = None,
-    area: Optional[str] = None,
-    floor: Optional[str] = None,
+    name: str,
+    # area: Optional[str] = None,
+    # floor: Optional[str] = None,
 ) -> str:
     """Gets the current temperature from a climate device or sensor."""
     hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
     slots = {}
     if name:
         slots["name"] = name
-    if area:
-        slots["area"] = area
-    if floor:
-        slots["floor"] = floor
+    # if area:
+    #     slots["area"] = area
+    # if floor:
+    #     slots["floor"] = floor
     response = await handle_intent(hass_client, INTENT_GET_TEMPERATURE, slots)
 
     speech = response.get("speech", {}).get("plain", {}).get("speech")
@@ -589,7 +589,7 @@ def get_tools() -> list[FunctionTool]:
         get_timer_status,
         # get_current_date,
         # get_current_time,
-        get_temperature,
+        # get_temperature,
         set_position,
         get_state,
     ]
