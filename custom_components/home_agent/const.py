@@ -6,7 +6,7 @@ DOMAIN = "home_agent"
 # See https://developers.home-assistant.io/docs/add-ons/communication#network
 # TODO: Avoid hardcoding/make it configurable
 # TODO: Potentially implement discovery
-ADDON_URL = "http://9bd46c1b-home-agent"
+ADDON_URL = "http://9bd46c1b-home-agent:8000"
 
 DEFAULT_MAX_HISTORY = 10  # Number of messages to keep in history
 MAX_HISTORY_SECONDS = 600  # How long to keep conversation history (10 minutes)
