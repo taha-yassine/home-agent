@@ -1,4 +1,4 @@
-ARG BUILD_FROM
+ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base-debian:bookworm
 
 FROM node:20-bullseye-slim AS frontend
 
@@ -28,7 +28,9 @@ RUN uv python install
 #     --mount=type=bind,source=uv.lock,target=uv.lock \
 #     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
 #     uv sync --locked --no-install-project --no-build
-COPY uv.lock pyproject.toml ./
+COPY pyproject.toml ./
+# TODO: Move away from uv workspaces so every component gets its own lockfile
+RUN uv lock
 RUN uv sync --locked --no-install-project --no-build
 
 COPY . /app
