@@ -16,11 +16,3 @@ ingress: true
 ingress_port: 8000
 panel_icon: mdi:robot-happy
 panel_title: Home Agent
-options:
-  llm_server_url: ""
-  llm_server_api_key: ""
-  llm_server_proxy: ""
-schema:
-  llm_server_url: "url?"
-  llm_server_api_key: "str?"
-  llm_server_proxy: "url?"
