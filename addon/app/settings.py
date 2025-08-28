@@ -33,7 +33,7 @@ def get_settings() -> Settings:
         return Settings(
             ha_api_url="http://supervisor/core/api",
             ha_api_key=os.getenv("SUPERVISOR_TOKEN"), # pyright: ignore
-            db_path="/data",
+            db_path=Path("/data"),
         )
     else:
         return Settings() # pyright: ignore 
