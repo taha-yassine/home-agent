@@ -122,7 +122,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             yield {
                 "hass_client": hass_client,
                 "tools": tools,
-                "model_id": settings.model_id,
                 "db": async_session,
                 "db_sync_engine": db_sync_engine
             }

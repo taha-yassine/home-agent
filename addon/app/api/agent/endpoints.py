@@ -20,9 +20,6 @@ def get_hass_client(request: Request) -> httpx.AsyncClient:
 def get_tools(request: Request) -> List[Tool]:
     return request.state.tools
 
-def get_model_id(request: Request) -> str:
-    return request.state.model_id
-
 router = APIRouter()
 
 @router.post("/conversation")

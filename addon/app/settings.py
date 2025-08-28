@@ -8,8 +8,6 @@ from dotenv import load_dotenv
 class Settings(BaseSettings):
     """Application settings."""
     app_env: str = "prod"
-    llm_server_proxy: str | None = None # Proxy for the LLM inference server
-    model_id: str = "generic" # ID of the LLM model to use; some connections ignore this
     ha_api_url: str  # Home Assistant API URL
     ha_api_key: str  # Bearer token for Home Assistant authentication
     db_path: Path
