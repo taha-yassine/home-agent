@@ -108,13 +108,29 @@ class ConversationService:
     @staticmethod
     async def fetch_home_entities(hass_client: httpx.AsyncClient) -> str:
         """Fetch the home entities from the Home Assistant API."""
-        response = await hass_client.get("/home_agent/entities")
+        try:
+            response = await hass_client.get("/home_agent/entities")
+        except Exception as e:
+            _LOGGER.error(f"Exception while fetching home entities: {e}", exc_info=True)
+            raise RuntimeError("Failed to fetch home entities from Home Assistant API") from e
 
         if response.status_code != 200:
-            _LOGGER.error(f"Failed to fetch home entities: {response.status_code} {response.text}")
-            return ""
-        if response.json()["entities"]:
-            return yaml.dump(list(response.json()["entities"].values()), sort_keys=False)
+            message = f"Failed to fetch home entities: {response.status_code} {response.text}"
+            _LOGGER.error(message)
+            raise RuntimeError(message)
+
+        try:
+            data = response.json()
+        except Exception as e:
+            _LOGGER.error(f"Invalid JSON while fetching home entities: {e}", exc_info=True)
+            raise RuntimeError("Received invalid JSON when fetching home entities") from e
+
+        entities = data.get("entities") if isinstance(data, dict) else None
+
+        if entities:
+            return yaml.dump(list(entities.values()), sort_keys=False)
+        
+        _LOGGER.warning("No entities were found in the home.")
         return ""
 
     @staticmethod
@@ -156,7 +172,12 @@ class ConversationService:
                 ),
             )
 
-            home_entities = await ConversationService.fetch_home_entities(hass_client)
+            try:
+                home_entities = await ConversationService.fetch_home_entities(hass_client)
+            except Exception as e:
+                _LOGGER.error(f"Unable to fetch home entities: {e}", exc_info=True)
+                yield f"I apologize, but I could not fetch the home entities: {str(e)}"
+                return
 
             context: Dict[str, Any] = {
                 "conversation_id": conversation_request.conversation_id,
