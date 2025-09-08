@@ -3,8 +3,8 @@ if os.getenv("DEBUGPY", "false").lower() == "true":
     import debugpy
     debugpy.listen(("0.0.0.0", 6789))
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 import logging
 from contextlib import asynccontextmanager
@@ -12,6 +12,7 @@ import httpx
 from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .tools import get_all_tools
 from .api import router as api_router
@@ -134,15 +135,70 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     
     app = FastAPI(lifespan=lifespan)
 
+    class IngressBaseMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            response = await call_next(request)
+
+            # Only modify HTML responses
+            content_type = response.headers.get("content-type", "")
+            if "text/html" not in content_type:
+                return response
+
+            # Derive base href from HA header or URL path
+            base_href = request.headers.get("X-Ingress-Path") or "/"
+            if not base_href.startswith("/"):
+                base_href = "/" + base_href
+            if not base_href.endswith("/"):
+                base_href = base_href + "/"
+
+            try:
+                body = b""  # type: ignore
+                async for chunk in response.body_iterator:  # type: ignore[attr-defined]
+                    body += chunk
+            except Exception:
+                # Fallback if body_iterator is not available
+                body = await response.body()
+
+            html = body.decode("utf-8", errors="ignore")
+
+            # If a <base> exists, replace it; else inject right after <head>
+            if "<base" in html:
+                import re
+                html = re.sub(r"<base[^>]*>", f"<base href=\"{base_href}\">", html, count=1)
+            else:
+                html = html.replace("<head>", f"<head><base href=\"{base_href}\">")
+
+            new_response = Response(
+                content=html,
+                media_type="text/html; charset=utf-8",
+                status_code=response.status_code,
+                headers={k: v for k, v in response.headers.items() if k.lower() != "content-length"},
+            )
+            return new_response
+
+    app.add_middleware(IngressBaseMiddleware)
+
     app.include_router(api_router)
 
     # Frontend
     frontend_dir = Path(__file__).parent.parent / "frontend" / "build" / "client"
     
     app.mount("/assets", StaticFiles(directory=frontend_dir / "assets"), name="assets")
-    
+
+    # SPA fallback: serve built files if they exist, otherwise index.html
     @app.get("/{full_path:path}")
-    async def serve_frontend(full_path: str):
+    async def spa_fallback(full_path: str):
+        target = (frontend_dir / full_path).resolve()
+        # Security: ensure target stays within frontend_dir
+        try:
+            target.relative_to(frontend_dir.resolve())
+        except ValueError:
+            # Outside of allowed directory
+            return Response(status_code=404)
+
+        if target.is_file():
+            return FileResponse(target)
+        # For any non-file route (e.g., "/conversations"), serve index.html
         return FileResponse(frontend_dir / "index.html")
 
     return app
