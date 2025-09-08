@@ -40,7 +40,13 @@ export default function Header() {
       <nav className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <h1 className="text-xl font-bold">Home Agent</h1>
+            <NavLink to="/" className="flex items-center gap-3">
+              <img src="/logo.svg" alt="Home Agent logo" className="h-10 w-10 dark:hidden" />
+              <img src="/logo_dark.svg" alt="Home Agent logo" className="h-10 w-10 hidden dark:block" />
+              <span className="font-righteous uppercase leading-4.5 text-xl">
+                Home<br />Agent
+              </span>
+            </NavLink>
           </div>
           <div className="flex justify-center flex-1">
             <div className="flex items-baseline space-x-4">
