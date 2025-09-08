@@ -19,7 +19,7 @@ export default function Conversations() {
   useEffect(() => {
     async function fetchConversations() {
       try {
-        const response = await fetch("/api/frontend/conversations");
+        const response = await fetch("api/frontend/conversations");
         if (!response.ok) {
           throw new Error("Failed to fetch conversations");
         }
@@ -85,9 +85,10 @@ export default function Conversations() {
               <tr key={conversation.id} className="hover:bg-zinc-100 dark:hover:bg-zinc-900">
                 <td className="pl-4 py-4 whitespace-nowrap text-sm font-medium">
                   <Link
-                    to={`/conversations/${conversation.id}`}
+                    to={`${conversation.id}`}
                     className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
                     title="View conversation details"
+                    relative="path"
                   >
                     <SquareChartGantt className="h-5 w-5" />
                   </Link>

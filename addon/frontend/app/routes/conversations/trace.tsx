@@ -38,7 +38,7 @@ export default function TraceDetail() {
     async function fetchSpans() {
       if (!traceId) return;
       try {
-        const response = await fetch(`/api/frontend/traces/${traceId}/spans`);
+        const response = await fetch(`api/frontend/traces/${traceId}/spans`);
         if (!response.ok) {
           throw new Error("Failed to fetch spans");
         }
