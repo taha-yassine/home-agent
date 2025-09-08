@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { ChevronDown } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import { useIngressBasePath } from "../hooks/useIngressBase";
 
 type NavItem = {
   name: string;
@@ -11,21 +12,22 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { name: "Conversations", href: "/conversations" },
-  { name: "Tools", href: "/tools" },
-  { name: "Documents", href: "/documents" },
+  { name: "Conversations", href: "conversations" },
+  { name: "Tools", href: "tools" },
+  { name: "Documents", href: "documents" },
   {
     name: "Connections",
     children: [
-      { name: "LLM", href: "/connections/LLM" },
-      { name: "MCP", href: "/connections/MCP" },
+      { name: "LLM", href: "connections/llm" },
+      { name: "MCP", href: "connections/mcp" },
     ],
   },
-  { name: "Usage", href: "/usage" },
+  { name: "Usage", href: "usage" },
 ];
 
 export default function Header() {
   const location = useLocation();
+  const pathnameBase = useIngressBasePath();
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const activeTabClasses =
@@ -43,17 +45,19 @@ export default function Header() {
           <div className="flex justify-center flex-1">
             <div className="flex items-baseline space-x-4">
               {navItems.map((item) => {
+                const makeTarget = (href: string) =>
+                  pathnameBase ? `${pathnameBase}/${href}` : href;
                 const isParentActive = item.href
-                  ? location.pathname.startsWith(item.href)
+                  ? location.pathname.startsWith(makeTarget(item.href))
                   : (item.children ?? []).some((c) =>
-                      location.pathname.startsWith(c.href)
+                      location.pathname.startsWith(makeTarget(c.href))
                     );
 
                 if (!item.children) {
                   return (
                     <NavLink
                       key={item.name}
-                      to={item.href!}
+                      to={makeTarget(item.href!)}
                       className={({ isActive }) =>
                         `px-3 py-2 rounded-md text-sm font-medium ${
                           isActive ? activeTabClasses : inactiveTabClasses
@@ -97,7 +101,7 @@ export default function Header() {
                               <MenuItem
                                 key={child.href}
                                 as={NavLink}
-                                to={child.href}
+                                to={makeTarget(child.href)}
                                 className="group flex w-full items-center rounded-md px-2 py-2 text-sm text-zinc-700 dark:text-zinc-200 data-[focus]:bg-zinc-100 dark:data-[focus]:bg-zinc-800 data-[focus]:text-zinc-900 dark:data-[focus]:text-white"
                               >
                                 {child.name}

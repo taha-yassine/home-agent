@@ -1,9 +1,20 @@
 import { Link, useLocation } from "react-router";
 import { Slash } from "lucide-react";
+import { useIngressBasePath } from "../hooks/useIngressBase";
 
 export default function Breadcrumbs() {
   const location = useLocation();
-  const pathnames = location.pathname.split("/").filter((x) => x);
+  // Minimal overrides to map acronym slugs to display labels while keeping URLs lowercase (e.g., "llm" -> "LLM").
+  const LABEL_OVERRIDES: Record<string, string> = { llm: "LLM", mcp: "MCP" };
+  const pathnameBase = useIngressBasePath();
+  // Strip the ingress base from the current pathname to compute breadcrumb parts.
+  const relativePathname =
+    pathnameBase && location.pathname.startsWith(pathnameBase)
+      ? location.pathname.slice(pathnameBase.length)
+      : location.pathname;
+  const pathnames = relativePathname.split("/").filter((x) => x);
+
+ 
 
   if (pathnames.length === 0) {
     return null;
@@ -13,11 +24,13 @@ export default function Breadcrumbs() {
     <nav className="flex" aria-label="Breadcrumb">
       <ol className="inline-flex items-center">
         {pathnames.map((value, index) => {
-          const to = `/${pathnames.slice(0, index + 1).join("/")}`;
+          const relativeTo = `/${pathnames.slice(0, index + 1).join("/")}`;
+          // Re-prefix links with the ingress base so navigation stays under ingress.
+          const to = `${pathnameBase}${relativeTo}`;
           const isLast = index === pathnames.length - 1;
 
-          let name = value;
-          name = value.charAt(0).toUpperCase() + value.slice(1);
+          const lower = value.toLowerCase();
+          let name = LABEL_OVERRIDES[lower] ?? (value.charAt(0).toUpperCase() + value.slice(1));
 
           return (
             <li key={to}>
