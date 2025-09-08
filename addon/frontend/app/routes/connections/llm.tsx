@@ -71,7 +71,7 @@ export default function ConnectionsLlm() {
   async function fetchConnections() {
     try {
       setLoading(true);
-      const response = await fetch("/api/frontend/connections");
+      const response = await fetch("api/frontend/connections");
       if (!response.ok) {
         throw new Error("Failed to fetch connections");
       }
@@ -99,7 +99,7 @@ export default function ConnectionsLlm() {
     if (!selectedConnection) return;
     try {
       setModelsError(null);
-      const response = await fetch("/api/frontend/models");
+      const response = await fetch("api/frontend/models");
       if (!response.ok) {
         throw new Error("Failed to fetch models");
       }
@@ -154,12 +154,9 @@ export default function ConnectionsLlm() {
 
   const handleSetActive = async (connection: Connection) => {
     try {
-      const response = await fetch(
-        `/api/frontend/connections/${connection.id}/active`,
-        {
-          method: "PUT",
-        }
-      );
+      const response = await fetch(`api/frontend/connections/${connection.id}/active`, {
+        method: "PUT",
+      });
       if (!response.ok) {
         throw new Error("Failed to set active connection");
       }
@@ -176,14 +173,11 @@ export default function ConnectionsLlm() {
   const handleSaveModel = async (modelId: string) => {
     if (!selectedConnection) return;
     try {
-      const response = await fetch(
-        `/api/frontend/connections/${selectedConnection.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: modelId }),
-        }
-      );
+      const response = await fetch(`api/frontend/connections/${selectedConnection.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: modelId }),
+      });
       if (!response.ok) {
         throw new Error("Failed to save model");
       }
@@ -199,7 +193,7 @@ export default function ConnectionsLlm() {
 
   const handleDeleteConnection = async (connectionId: number) => {
     try {
-      const response = await fetch(`/api/frontend/connections/${connectionId}`, {
+      const response = await fetch(`api/frontend/connections/${connectionId}`, {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -218,7 +212,7 @@ export default function ConnectionsLlm() {
   const handleCreateConnection = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch("/api/frontend/connections", {
+      const response = await fetch("api/frontend/connections", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newConnection),

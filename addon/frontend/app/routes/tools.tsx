@@ -21,7 +21,7 @@ export default function Tools() {
   async function fetchTools() {
     try {
       setLoading(true);
-      const response = await fetch("/api/frontend/tools");
+      const response = await fetch("api/frontend/tools");
       if (!response.ok) {
         throw new Error("Failed to fetch tools");
       }
