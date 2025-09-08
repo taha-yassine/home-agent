@@ -1,6 +1,6 @@
 import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
-export default [
+const children = [
   index("routes/index.tsx"),
   route("tools", "routes/tools.tsx"),
   route("documents", "routes/documents.tsx"),
@@ -14,4 +14,10 @@ export default [
     route(":traceId", "routes/conversations/trace.tsx"),
   ]),
   route("usage", "routes/usage.tsx"),
-] satisfies RouteConfig;
+];
+
+export default (
+  import.meta.env.DEV
+    ? children
+    : [route("api/hassio_ingress/:token", "routes/ingress.tsx", children)]
+) satisfies RouteConfig;
