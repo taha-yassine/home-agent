@@ -1,51 +1,51 @@
-# Home Agent for Home Assistant
+# Home Agent
 
 Home Agent is an AI module for Home Assistant that adds powerful conversational and automation capabilities to your smart home. It leverages agentic LLMs to handle and execute tasks.
+
+![Screenshot](assets/screenshot.png)
+
+> [!WARNING]
+> This project is currently under active development. It's not ready to be used yet.
+>
+> Expect bugs, missing features, and breaking changes.
 
 ## Overview
 
 The project consists of two main parts:
 
-2. **Add-on**: Manages AI models and provides advanced orchestration capabilities
-1. **Custom Component**: Integrates directly with Home Assistant to handle conversations and state management
+2. **Add-on**: Manages AI agents and provides advanced orchestration capabilities
+1. **Custom Component**: Integrates directly with Home Assistant to handle conversations
 
 ## Features
 
-Features:
-- [x] Basic conversation interception through Home Assistant
-- [x] Basic tool usage
-- [ ] Smart conversation routing and processing
-- [ ] Interactive UI
-- [ ] Conversation history and analytics
+- [x] Conversations
+- [x] Controlling the home
+- [x] Tracing
+- [x] LLM backends management
+- [ ] Tool management (WIP)
+- [ ] MCP servers (WIP)
+- [ ] RAG
+- [ ] Asking for permission to perform actions
 - [ ] Token usage monitoring
-- [ ] KV caching and preloading
-- [ ] RAG-based context management
+
+More features will be added as the project evolves.
+If you have any suggestions, please open an issue or a pull request.
 
 ## Installation
+For this project to work, you need to set up both the add-on and the custom component. The add-on should be installed first.
 
-### Prerequisites
-- Home Assistant instance (Core, OS, or Container)
-- Add-on support enabled (for Home Assistant OS or supervised installations)
+### Add-on
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Ftaha-yassine%2Fhome-agent)
 
-### Custom Component Installation
-1. Copy the `custom_component` directory to your Home Assistant `custom_components` folder
-2. Restart Home Assistant
-3. Add the integration through the Home Assistant UI
-
-### Add-on Installation
-1. Add this repository to your Home Assistant Add-on Store
+1. Add this repository to the Add-on store
 2. Install the Home Agent Add-on
-3. Configure the add-on settings
-4. Start the add-on
+3. Start the add-on
 
-## Configuration
+### Custom Component (HACS)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=taha-yassine&repository=home-agent)
 
-Detailed configuration documentation coming soon.
-
-## Development
-
-This project is under active development.
-
-## License
-
-[License details to be added]
+1. Make sure you have HACS installed
+2. Add this repository to HACS
+3. Restart Home Assistant
+4. Make sure the add-on is running
+5. Add the integration through the Home Assistant UI
