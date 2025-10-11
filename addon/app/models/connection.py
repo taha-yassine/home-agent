@@ -25,5 +25,4 @@ class Connection(ConnectionBase):
     model: str | None = Field(None, description="The model selected for the backend")
     is_active: bool = Field(False, description="Whether the backend is active")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
