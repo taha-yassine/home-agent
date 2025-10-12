@@ -9,6 +9,7 @@ from ...models import (
     ConnectionUpdate,
     ConversationList,
     Span,
+    TraceNeighbors,
 )
 from ...services import (
     ConversationService,
@@ -41,6 +42,15 @@ async def get_spans(
 ) -> list[Span]:
     """Get all spans for a given trace."""
     return await TraceService.get_spans_by_trace_id(db, trace_id)
+
+
+@router.get("/traces/{trace_id}/neighbors", response_model=TraceNeighbors)
+async def get_trace_neighbors(
+    trace_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> TraceNeighbors:
+    """Get the neighbors for a given trace."""
+    return await TraceService.get_trace_neighbors(db, trace_id)
 
 
 @router.get("/connections", response_model=list[Connection])
