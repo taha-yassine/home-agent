@@ -16,3 +16,10 @@ class Span(BaseModel):
     span_type: str
     span_data: dict
     error: Optional[dict]
+
+
+class TraceNeighbors(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    previous: str | None = None
+    next: str | None = None

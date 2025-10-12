@@ -1,9 +1,21 @@
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Drill, Text } from "lucide-react";
 import Loading from "../../components/Loading";
+import { Button } from "@headlessui/react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Drill,
+  Text,
+} from "lucide-react";
 import type { Span } from "../../types";
 import Breadcrumbs from "../../components/Breadcrumbs";
+
+type TraceNeighbors = {
+  previous: string | null;
+  next: string | null;
+};
 
 const typeDisplayConfig: Record<
   string,
@@ -27,7 +39,10 @@ const typeDisplayConfig: Record<
 
 export default function TraceDetail() {
   const { traceId } = useParams();
+  const navigate = useNavigate();
+  
   const [spans, setSpans] = useState<Span[]>([]);
+  const [neighbors, setNeighbors] = useState<TraceNeighbors | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedSpans, setExpandedSpans] = useState<Record<string, boolean>>(
@@ -55,7 +70,23 @@ export default function TraceDetail() {
       }
     }
 
+    async function fetchNeighbors() {
+      if (!traceId) return;
+      try {
+        const response = await fetch(`api/frontend/traces/${traceId}/neighbors`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch neighbors");
+        }
+        const data = await response.json();
+        setNeighbors(data);
+      } catch (err) {
+        // Not a critical error, so we just log it
+        console.error(err);
+      }
+    }
+
     fetchSpans();
+    fetchNeighbors();
   }, [traceId]);
 
   const toggleExpand = (spanId: string) => {
@@ -88,6 +119,32 @@ export default function TraceDetail() {
     <>
       <div className="flex justify-between items-center mb-4 min-h-10">
         <Breadcrumbs />
+        <div className="flex justify-end gap-2 mb-4">
+          <Button
+            onClick={() =>
+              neighbors?.previous && navigate(`../${neighbors.previous}`)
+            }
+            className="px-2 py-1 text-sm rounded-md bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 data-hover:bg-zinc-100 data-hover:dark:bg-zinc-800 data-disabled:bg-zinc-100 data-disabled:text-zinc-400 data-disabled:dark:bg-zinc-800 data-disabled:dark:text-zinc-600 data-disabled:cursor-not-allowed data-disabled:border-transparent"
+            disabled={!neighbors?.previous}
+          >
+            <div className="flex items-center">
+              <ChevronLeft className="h-4 w-4" />
+              <span className="ml-2">Previous</span>
+            </div>
+          </Button>
+          <Button
+            onClick={() =>
+              neighbors?.next && navigate(`../${neighbors.next}`)
+            }
+            className="px-2 py-1 text-sm rounded-md bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 data-hover:bg-zinc-100 data-hover:dark:bg-zinc-800 data-disabled:bg-zinc-100 data-disabled:text-zinc-400 data-disabled:dark:bg-zinc-800 data-disabled:dark:text-zinc-600 data-disabled:cursor-not-allowed data-disabled:border-transparent"
+            disabled={!neighbors?.next}
+          >
+            <div className="flex items-center">
+              <span className="mr-2">Next</span>
+              <ChevronRight className="h-4 w-4" />
+            </div>
+          </Button>
+        </div>
       </div>
     <div className="w-full">
       <div className="overflow-hidden border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
