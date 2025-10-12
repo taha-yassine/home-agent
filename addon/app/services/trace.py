@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import asc, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from ..db import Span as SpanModel
 from ..models import Span, TraceNeighbors
