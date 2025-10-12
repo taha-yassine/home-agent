@@ -378,7 +378,10 @@ async def set_light(
         color: The name of the color to set the light to.
     """
     hass_client: AsyncClient = ctx_wrapper.context["hass_client"]
-    slots: dict[str, Any] = {"name": name}
+    slots: dict[str, Any] = {
+        "name": name,
+        "domain": "light", # Avoids confusion when a non-light entity with the same name exists
+    }
     if brightness is not None:
         slots["brightness"] = brightness
     if color is not None:
