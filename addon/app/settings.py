@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     ha_api_url: str  # Home Assistant API URL
     ha_api_key: str  # Bearer token for Home Assistant authentication
     db_path: Path
+    max_turns: int = 5
 
     model_config = SettingsConfigDict(
         env_prefix="HOME_AGENT_",

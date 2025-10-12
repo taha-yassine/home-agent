@@ -31,6 +31,7 @@ from ..models import (
 )
 from .connection import ConnectionService
 from ..tracing import HASpanExporter
+from ..settings import get_settings
 
 _LOGGER = logging.getLogger('uvicorn.error')
 
@@ -189,11 +190,12 @@ class ConversationService:
             input = conversation_request.text
 
             try:
+                settings = get_settings()
                 result = Runner.run_streamed(
                     starting_agent=agent,
                     input=input,
                     context=context,
-                    max_turns=3,
+                    max_turns=settings.max_turns,
                 )
                 async for event in result.stream_events():
                     if event.type == "raw_response_event" and isinstance(event.data, ResponseTextDeltaEvent):
