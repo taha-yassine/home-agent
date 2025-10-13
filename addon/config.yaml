@@ -16,3 +16,7 @@ ingress: true
 ingress_port: 8000
 panel_icon: mdi:robot-happy
 panel_title: Home Agent
+options:
+  max_turns: 5
+schema:
+  max_turns: int
