@@ -94,7 +94,7 @@ export default function Header() {
                         <MenuItems
                           transition
                           anchor="bottom start"
-                          className="absolute left-0 mt-2 w-44 origin-top-left divide-y divide-zinc-100 rounded-md bg-white dark:bg-zinc-900 shadow-lg ring-1 ring-black/5 focus:outline-none transition data-[closed]:scale-95 data-[closed]:opacity-0"
+                          className="absolute left-0 mt-2 w-44 origin-top-left divide-y divide-zinc-100 rounded-md bg-white dark:bg-zinc-900 shadow-lg ring-1 ring-zinc-300 dark:ring-zinc-700 focus:outline-none transition data-[closed]:scale-95 data-[closed]:opacity-0"
                         >
                           <div className="px-1 py-1">
                             {(item.children ?? []).map((child) => (

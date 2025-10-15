@@ -17,9 +17,12 @@ from agents import (
     Tool,
     ModelSettings,
     RunContextWrapper,
+    RunConfig,
     set_trace_processors,
 )
 from agents.tracing.processors import BatchTraceProcessor
+from agents.extensions.memory.sqlalchemy_session import SQLAlchemySession
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from ..db import Span, Trace
 from ..models import (
@@ -139,6 +142,7 @@ class ConversationService:
         tools: List[Tool],
         db: AsyncSession,
         db_engine: Engine,
+        session_engine: AsyncEngine,
     ):
         """Process a conversation with the agent."""
         set_trace_processors([BatchTraceProcessor(exporter=HASpanExporter(db_engine))])
@@ -192,11 +196,18 @@ class ConversationService:
 
             try:
                 settings = get_settings()
+                session = SQLAlchemySession(
+                    conversation_request.conversation_id,
+                    engine=session_engine,
+                    create_tables=True,
+                )
                 result = Runner.run_streamed(
                     starting_agent=agent,
                     input=input,
                     context=context,
                     max_turns=settings.max_turns,
+                    session=session,
+                    run_config=RunConfig(group_id=conversation_request.conversation_id),
                 )
                 async for event in result.stream_events():
                     if event.type == "raw_response_event" and isinstance(event.data, ResponseTextDeltaEvent):

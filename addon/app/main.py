@@ -47,6 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         settings.db_path.mkdir(parents=True, exist_ok=True)
 
         db_async_engine = create_async_engine(f"sqlite+aiosqlite:///{settings.db_path / 'home_agent.db'}")
+        agent_session_engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         async_session = async_sessionmaker(bind=db_async_engine, expire_on_commit=False)
 
         async with db_async_engine.begin() as conn:
@@ -133,6 +134,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "db": async_session,
                 "db_sync_engine": db_sync_engine,
                 "openai_client": openai_client,
+                "agent_session_engine": agent_session_engine,
             }
         finally:
             # Shutdown
@@ -141,6 +143,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await db_async_engine.dispose()
             db_sync_engine.dispose()
             await openai_client.close()
+            await agent_session_engine.dispose()
     
     app = FastAPI(lifespan=lifespan)
 

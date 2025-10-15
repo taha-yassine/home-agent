@@ -3,12 +3,13 @@ from fastapi.responses import StreamingResponse
 from typing import List
 import httpx
 from sqlalchemy import Engine
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents import Tool
 from ...models import ConversationRequest, ConversationResponse
 from ...services import ConversationService
-from ...dependencies import get_sync_db, get_db, get_hass_client, get_tools
+from ...dependencies import get_sync_db, get_db, get_hass_client, get_tools, get_agent_session_engine
 
 
 router = APIRouter()
@@ -21,6 +22,7 @@ async def process_conversation(
     tools: List[Tool] = Depends(get_tools),
     db: AsyncSession = Depends(get_db),
     db_engine: Engine = Depends(get_sync_db),
+    session_engine: AsyncEngine = Depends(get_agent_session_engine),
 ):
     """Process a conversation with the agent. If stream=true, respond via SSE."""
 
@@ -32,6 +34,7 @@ async def process_conversation(
                 tools=tools,
                 db=db,
                 db_engine=db_engine,
+                session_engine=session_engine,
             ):
                 yield chunk
 
@@ -45,6 +48,7 @@ async def process_conversation(
         tools=tools,
         db=db,
         db_engine=db_engine,
+        session_engine=session_engine,
     ):
         final_text += chunk
 

@@ -1,5 +1,5 @@
 from fastapi import Request
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
 from collections.abc import AsyncGenerator
 from sqlalchemy import Engine
 from openai import AsyncOpenAI
@@ -30,3 +30,7 @@ def get_hass_client(request: Request) -> httpx.AsyncClient:
 
 def get_tools(request: Request) -> List[Tool]:
     return request.state.tools
+
+
+def get_agent_session_engine(request: Request) -> AsyncEngine:
+    return request.state.agent_session_engine
