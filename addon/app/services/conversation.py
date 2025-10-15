@@ -35,10 +35,8 @@ from ..settings import get_settings
 
 _LOGGER = logging.getLogger('uvicorn.error')
 
-def construct_prompt(ctx_wrapper: RunContextWrapper[Any], agent: Agent | None) -> str:
+def construct_prompt(home_entities: str) -> str:
     """Construct prompt for the agent."""
-    home_entities = ctx_wrapper.context["home_entities"]
-
     prompt = dedent("""\
         You are a helpful assistant that helps with tasks around the home. You will be given instructions that you are asked to follow. You can use the tools provided to you to control devices in the home in order to complete the task. When you have completed the task, you should respond with a summary of the task and the result in first person (e.g. I turned on the lights).
         
@@ -150,6 +148,9 @@ class ConversationService:
         if not active_connection:
             yield "No active connection found. Please configure a connection."
             return
+        
+        def instructions(ctx_wrapper: RunContextWrapper[Any], agent: Agent | None) -> str:
+            return construct_prompt(home_entities=ctx_wrapper.context["home_entities"])
 
         # We're constrained to creating a new httpx client for each connection because the base_url can't be changed at runtime
         async with AsyncOpenAI(
@@ -162,7 +163,7 @@ class ConversationService:
                     model=active_connection.model or "generic",
                     openai_client=openai_client,
                 ),
-                instructions=construct_prompt,
+                instructions=instructions,
                 tools=tools,
                 model_settings=ModelSettings(
                     extra_body={
