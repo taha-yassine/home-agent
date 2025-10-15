@@ -1,24 +1,15 @@
-from fastapi import APIRouter, Depends, Request, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from typing import List
 import httpx
-from openai import AsyncOpenAI
 from sqlalchemy import Engine
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents import Tool
 from ...models import ConversationRequest, ConversationResponse
 from ...services import ConversationService
-from ...dependencies import get_sync_db, get_db
+from ...dependencies import get_sync_db, get_db, get_hass_client, get_tools
 
-def get_openai_client(request: Request) -> AsyncOpenAI:
-    return request.state.openai_client
-
-def get_hass_client(request: Request) -> httpx.AsyncClient:
-    return request.state.hass_client
-
-def get_tools(request: Request) -> List[Tool]:
-    return request.state.tools
 
 router = APIRouter()
 

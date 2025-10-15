@@ -151,7 +151,7 @@ class ConversationService:
             yield "No active connection found. Please configure a connection."
             return
 
-        # We're constrained to creating a new httpx client for each connection because the base_url can be changed at runtime
+        # We're constrained to creating a new httpx client for each connection because the base_url can't be changed at runtime
         async with AsyncOpenAI(
             base_url=active_connection.url,
             api_key=active_connection.api_key,

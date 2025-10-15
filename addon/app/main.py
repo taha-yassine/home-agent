@@ -12,6 +12,7 @@ import httpx
 from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from openai import AsyncOpenAI
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .tools import get_all_tools
@@ -41,6 +42,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         Manage application startup and shutdown events.
         """
         # Startup
+
+        # DB
         settings.db_path.mkdir(parents=True, exist_ok=True)
 
         db_async_engine = create_async_engine(f"sqlite+aiosqlite:///{settings.db_path / 'home_agent.db'}")
@@ -53,6 +56,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # May need better handling
         db_sync_engine = create_engine(f"sqlite:///{settings.db_path / 'home_agent.db'}")
         
+        # Home Assistant
         hass_client = httpx.AsyncClient(
             base_url=settings.ha_api_url,
             headers={"Authorization": f"Bearer {settings.ha_api_key}"},
@@ -61,6 +65,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         # TODO: Optimize tool handling
         tools = get_all_tools()
+
+        # OpenAI client
+        openai_client = AsyncOpenAI(api_key="") # API key is required for initialization
 
         try:
             
@@ -124,7 +131,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "hass_client": hass_client,
                 "tools": tools,
                 "db": async_session,
-                "db_sync_engine": db_sync_engine
+                "db_sync_engine": db_sync_engine,
+                "openai_client": openai_client,
             }
         finally:
             # Shutdown
@@ -132,6 +140,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await hass_client.aclose()
             await db_async_engine.dispose()
             db_sync_engine.dispose()
+            await openai_client.close()
     
     app = FastAPI(lifespan=lifespan)
 
