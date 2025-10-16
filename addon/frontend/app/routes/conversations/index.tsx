@@ -6,7 +6,7 @@ import { SquareChartGantt } from "lucide-react";
 import Breadcrumbs from "../../components/Breadcrumbs";
 
 interface Conversation {
-  id: string;
+  group_id: string;
   started_at: string;
   instruction: string;
 }
@@ -82,10 +82,10 @@ export default function Conversations() {
           </thead>
           <tbody className="bg-white dark:bg-zinc-950 divide-y divide-zinc-200 dark:divide-zinc-800">
             {conversations.map((conversation) => (
-              <tr key={conversation.id} className="hover:bg-zinc-100 dark:hover:bg-zinc-900">
+              <tr key={conversation.group_id} className="hover:bg-zinc-100 dark:hover:bg-zinc-900">
                 <td className="pl-4 py-4 whitespace-nowrap text-sm font-medium">
                   <Link
-                    to={`${conversation.id}`}
+                    to={`${conversation.group_id}`}
                     className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
                     title="View conversation details"
                     relative="path"
@@ -94,7 +94,7 @@ export default function Conversations() {
                   </Link>
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  {conversation.id}
+                  {conversation.group_id}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
                   <TimeAgo

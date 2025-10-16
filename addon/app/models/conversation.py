@@ -16,7 +16,7 @@ class ConversationResponse(BaseModel):
 class Conversation(BaseModel):
     """Model for a single conversation."""
 
-    id: str
+    group_id: str
     started_at: datetime
     instruction: str
 

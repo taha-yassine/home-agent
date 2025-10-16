@@ -15,12 +15,13 @@ import {
   ChartNoAxesColumnIncreasing,
   SlidersHorizontal,
   AlertTriangle,
+  MessagesSquare,
 } from "lucide-react";
-import type { Span } from "../../types";
+import type { Span, ConversationTracesResponse, TraceWithSpans } from "../../types";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import JsonCodeBlock from "../../components/JsonCodeBlock";
 
-type TraceNeighbors = {
+type ConversationNeighbors = {
   previous: string | null;
   next: string | null;
 };
@@ -294,12 +295,12 @@ const typeDisplayConfig: Record<
   },
 };
 
-export default function TraceDetail() {
-  const { traceId } = useParams();
+export default function ConversationDetail() {
+  const { groupId } = useParams();
   const navigate = useNavigate();
   
-  const [spans, setSpans] = useState<Span[]>([]);
-  const [neighbors, setNeighbors] = useState<TraceNeighbors | null>(null);
+  const [grouped, setGrouped] = useState<ConversationTracesResponse | null>(null);
+  const [neighbors, setNeighbors] = useState<ConversationNeighbors | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedSpans, setExpandedSpans] = useState<Record<string, boolean>>(
@@ -307,16 +308,21 @@ export default function TraceDetail() {
   );
   const [viewModeMap, setViewModeMap] = useState<Record<string, "pretty" | "json">>({});
 
+  const formatShortDuration = (ms: number) => {
+    if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
+    return `${Math.round(ms)}ms`;
+  };
+
   useEffect(() => {
     async function fetchSpans() {
-      if (!traceId) return;
+      if (!groupId) return;
       try {
-        const response = await fetch(`api/frontend/traces/${traceId}/spans`);
+        const response = await fetch(`api/frontend/conversations/${groupId}/traces`);
         if (!response.ok) {
           throw new Error("Failed to fetch spans");
         }
-        const data = await response.json();
-        setSpans(data);
+        const data: ConversationTracesResponse = await response.json();
+        setGrouped(data);
       } catch (err) {
         if (err instanceof Error) {
           setError(err.message);
@@ -329,9 +335,9 @@ export default function TraceDetail() {
     }
 
     async function fetchNeighbors() {
-      if (!traceId) return;
+      if (!groupId) return;
       try {
-        const response = await fetch(`api/frontend/traces/${traceId}/neighbors`);
+        const response = await fetch(`api/frontend/conversations/${groupId}/neighbors`);
         if (!response.ok) {
           throw new Error("Failed to fetch neighbors");
         }
@@ -344,7 +350,7 @@ export default function TraceDetail() {
 
     fetchSpans();
     fetchNeighbors();
-  }, [traceId]);
+  }, [groupId]);
 
   const toggleExpand = (spanId: string) => {
     setExpandedSpans((prev) => ({ ...prev, [spanId]: !prev[spanId] }));
@@ -354,19 +360,11 @@ export default function TraceDetail() {
     setViewModeMap((prev) => ({ ...prev, [spanId]: mode }));
   };
 
-  const filteredSpans = spans.filter(
-    (span) => span.span_data?.type && span.span_data.type !== "agent"
-  );
+  const groupedTraces: TraceWithSpans[] = (grouped?.traces ?? []).map((t) => ({
+    ...t,
+    spans: t.spans.filter((s) => s.span_data?.type && s.span_data.type !== "agent"),
+  }));
 
-  const sortedSpans = [...filteredSpans].sort(
-    (a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime()
-  );
-
-  const startTimes = sortedSpans.map((s) => new Date(s.started_at).getTime());
-  const endTimes = sortedSpans.map((s) => new Date(s.ended_at).getTime());
-  const minTime = Math.min(...startTimes);
-  const maxTime = Math.max(...endTimes);
-  const totalDuration = maxTime - minTime;
 
   if (loading) {
     return <Loading />;
@@ -411,18 +409,38 @@ export default function TraceDetail() {
         <div className="overflow-hidden border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
           <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 table-fixed">
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
-              {sortedSpans.map((span) => {
+              {groupedTraces.map((turn, turnIndex) => (
+                <Fragment key={turn.trace_id}>
+                  <tr className="bg-zinc-50 dark:bg-zinc-900">
+                    <td colSpan={4} className="px-4 py-2">
+                      <div className="flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400">
+                        <div className="flex items-center gap-2">
+                          <MessagesSquare className="h-4 w-4" />
+                          <div className="text-sm  font-semibold">Turn {turnIndex + 1}</div>
+                        </div>
+                        <div className="ml-2">
+                          {(() => {
+                            const dur = new Date(turn.ended_at).getTime() - new Date(turn.started_at).getTime();
+                            return (
+                              <span title={`${dur} ms`} className="opacity-80">{formatShortDuration(dur)}</span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  {(() => {
+                const turnStart = new Date(turn.started_at).getTime();
+                const turnEnd = new Date(turn.ended_at).getTime();
+                const turnTotal = Math.max(0, turnEnd - turnStart);
+                return turn.spans.map((span) => {
                 const isExpanded = expandedSpans[span.id];
                 const startTime = new Date(span.started_at).getTime();
                 const endTime = new Date(span.ended_at).getTime();
                 const duration = endTime - startTime;
 
-                const leftPercent =
-                  totalDuration > 0
-                    ? ((startTime - minTime) / totalDuration) * 100
-                    : 0;
-                const widthPercent =
-                  totalDuration > 0 ? (duration / totalDuration) * 100 : 0;
+                const leftPercent = turnTotal > 0 ? ((startTime - turnStart) / turnTotal) * 100 : 0;
+                const widthPercent = turnTotal > 0 ? (duration / turnTotal) * 100 : 0;
 
                 const spanType = span.span_data.type as string;
                 const config = typeDisplayConfig[spanType];
@@ -523,7 +541,10 @@ export default function TraceDetail() {
                     )}
                   </Fragment>
                 );
-              })}
+                });
+                  })()}
+                </Fragment>
+              ))}
             </tbody>
           </table>
         </div>

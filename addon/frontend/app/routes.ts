@@ -11,7 +11,7 @@ const children = [
   ]),
   route("conversations", "routes/conversations/layout.tsx", [
     index("routes/conversations/index.tsx"),
-    route(":traceId", "routes/conversations/trace.tsx"),
+    route(":groupId", "routes/conversations/conversation.tsx"),
   ]),
   route("usage", "routes/usage.tsx"),
 ];

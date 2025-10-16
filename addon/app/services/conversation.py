@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 import httpx
 from openai import AsyncOpenAI
 from openai.types.responses import ResponseTextDeltaEvent
-from sqlalchemy import Engine, desc, func, select
+from sqlalchemy import Engine, desc, func, select, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from datetime import timezone
@@ -56,55 +56,85 @@ class ConversationService:
         """Get all conversations from the database."""
         # TODO: Implement proper sorting and pagination
 
+        # For each group_id, pick earliest generation span in the group for instruction
+        # and earliest time as started_at. Then sort groups by latest generation span desc.
+
+        # Rank generation spans per trace
         ranked_spans_subq = (
             select(
                 Span,
                 func.row_number()
                 .over(
                     partition_by=Span.trace_id,
+                    order_by=asc(Span.started_at),
+                )
+                .label("row_num_asc"),
+                func.row_number()
+                .over(
+                    partition_by=Span.trace_id,
                     order_by=desc(Span.started_at),
                 )
-                .label("row_num"),
+                .label("row_num_desc"),
             )
             .where(Span.span_type == "generation")
             .subquery("ranked_spans")
         )
 
-        latest_generation_span_alias = aliased(Span, ranked_spans_subq)
+        gen_span_asc = aliased(Span, ranked_spans_subq)
+        gen_span_desc = aliased(Span, ranked_spans_subq)
 
-        stmt = (
-            select(Trace, latest_generation_span_alias)
-            .join(
-                latest_generation_span_alias,
-                Trace.id == latest_generation_span_alias.trace_id,
-            )
-            .where(ranked_spans_subq.c.row_num == 1)
-            .order_by(desc(latest_generation_span_alias.started_at))
+        # Earliest generation span per trace
+        earliest_gen_per_trace = (
+            select(gen_span_asc.trace_id, gen_span_asc.started_at, gen_span_asc.span_data)
+            .where(ranked_spans_subq.c.row_num_asc == 1)
+            .subquery()
         )
 
-        results = (await db.execute(stmt)).all()
-        conversations = []
-        for trace, latest_generation_span in results:
+        # Latest generation span time per trace
+        latest_time_per_trace = (
+            select(gen_span_desc.trace_id, gen_span_desc.started_at.label("latest_time"))
+            .where(ranked_spans_subq.c.row_num_desc == 1)
+            .subquery()
+        )
+
+        # Join traces to their group_id and aggregate by group
+        group_agg = (
+            select(
+                Trace.group_id.label("group_id"),
+                func.min(earliest_gen_per_trace.c.started_at).label("group_started_at"),
+                func.max(latest_time_per_trace.c.latest_time).label("group_latest_time"),
+                func.min(earliest_gen_per_trace.c.span_data).label("example_span_data"),
+            )
+            .join(earliest_gen_per_trace, earliest_gen_per_trace.c.trace_id == Trace.id)
+            .join(latest_time_per_trace, latest_time_per_trace.c.trace_id == Trace.id)
+            .group_by(Trace.group_id)
+            .order_by(desc(func.max(latest_time_per_trace.c.latest_time)))
+        )
+
+        rows = (await db.execute(group_agg)).all()
+        conversations: list[Conversation] = []
+        for row in rows:
+            group_id = row.group_id
+            if not group_id:
+                continue
+            started_at = row.group_started_at.replace(tzinfo=timezone.utc)
+            instruction = None
             try:
-                instruction = latest_generation_span.span_data["input"][1]["content"]
+                # Pull instruction from the saved generation span format
+                example_input = row.example_span_data["input"]
+                if isinstance(example_input, list) and len(example_input) > 1:
+                    instruction = example_input[1]["content"]
+            except Exception:
+                instruction = None
 
-                # sqlite3 strips timezone info from datetime objects so we need to add it back
-                started_at = latest_generation_span.started_at.replace(
-                    tzinfo=timezone.utc
+            conversations.append(
+                Conversation(
+                    group_id=group_id,
+                    started_at=started_at,
+                    instruction=instruction or "",
                 )
+            )
 
-                conversations.append(
-                    Conversation(
-                        id=trace.id,
-                        started_at=started_at,
-                        instruction=instruction,
-                    )
-                )
-            except (KeyError, IndexError):
-                _LOGGER.warning(
-                    f"Could not extract instruction for trace {trace.id}",
-                    exc_info=True,
-                )
         return ConversationList(conversations=conversations)
 
     @staticmethod

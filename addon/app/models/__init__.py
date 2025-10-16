@@ -1,6 +1,6 @@
 from .conversation import ConversationRequest, ConversationResponse, ConversationList, Conversation
 from .connection import Connection, ConnectionCreate, ConnectionUpdate
-from .trace import Span, TraceNeighbors
+from .trace import Span, ConversationNeighbors, TraceWithSpans, ConversationTracesResponse
 from .tool import Tool
 
 __all__ = [
@@ -9,7 +9,9 @@ __all__ = [
     "ConversationList",
     "Conversation",
     "Span",
-    "TraceNeighbors",
+    "ConversationNeighbors",
+    "TraceWithSpans",
+    "ConversationTracesResponse",
     "Connection",
     "ConnectionCreate",
     "ConnectionUpdate",

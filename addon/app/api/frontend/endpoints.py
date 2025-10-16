@@ -9,7 +9,8 @@ from ...models import (
     ConnectionUpdate,
     ConversationList,
     Span,
-    TraceNeighbors,
+    ConversationNeighbors,
+    ConversationTracesResponse,
 )
 from ...services import (
     ConversationService,
@@ -44,13 +45,24 @@ async def get_spans(
     return await TraceService.get_spans_by_trace_id(db, trace_id)
 
 
-@router.get("/traces/{trace_id}/neighbors", response_model=TraceNeighbors)
-async def get_trace_neighbors(
-    trace_id: str,
-    db: AsyncSession = Depends(get_db),
-) -> TraceNeighbors:
-    """Get the neighbors for a given trace."""
-    return await TraceService.get_trace_neighbors(db, trace_id)
+
+
+
+@router.get("/conversations/{group_id}/traces", response_model=ConversationTracesResponse)
+async def get_traces_by_group(
+    group_id: str, db: AsyncSession = Depends(get_db)
+) -> ConversationTracesResponse:
+    """Get all traces and their spans for a given conversation group."""
+    traces = await TraceService.get_traces_with_spans_by_group_id(db, group_id)
+    return ConversationTracesResponse(group_id=group_id, traces=traces)
+
+
+@router.get("/conversations/{group_id}/neighbors", response_model=ConversationNeighbors)
+async def get_group_neighbors(
+    group_id: str, db: AsyncSession = Depends(get_db)
+) -> ConversationNeighbors:
+    """Get the neighbors for a given conversation group."""
+    return await TraceService.get_group_neighbors(db, group_id)
 
 
 @router.get("/connections", response_model=list[Connection])

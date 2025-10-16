@@ -9,3 +9,15 @@ export interface Span {
   span_data: { [key: string]: any };
   error?: any;
 } 
+
+export interface TraceWithSpans {
+  trace_id: string;
+  started_at: string;
+  ended_at: string;
+  spans: Span[];
+}
+
+export interface ConversationTracesResponse {
+  group_id: string;
+  traces: TraceWithSpans[];
+}
