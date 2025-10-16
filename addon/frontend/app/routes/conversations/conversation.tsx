@@ -365,6 +365,12 @@ export default function ConversationDetail() {
     spans: t.spans.filter((s) => s.span_data?.type && s.span_data.type !== "agent"),
   }));
 
+  // Use a global duration across all turns so Gantt bars are proportional between turns
+  const globalDuration = Math.max(
+    0,
+    ...groupedTraces.map((t) => new Date(t.ended_at).getTime() - new Date(t.started_at).getTime())
+  );
+
 
   if (loading) {
     return <Loading />;
@@ -439,8 +445,9 @@ export default function ConversationDetail() {
                 const endTime = new Date(span.ended_at).getTime();
                 const duration = endTime - startTime;
 
-                const leftPercent = turnTotal > 0 ? ((startTime - turnStart) / turnTotal) * 100 : 0;
-                const widthPercent = turnTotal > 0 ? (duration / turnTotal) * 100 : 0;
+                // Scale by globalDuration so that spans are proportional across different turns
+                const leftPercent = globalDuration > 0 ? ((startTime - turnStart) / globalDuration) * 100 : 0;
+                const widthPercent = globalDuration > 0 ? (duration / globalDuration) * 100 : 0;
 
                 const spanType = span.span_data.type as string;
                 const config = typeDisplayConfig[spanType];
