@@ -18,7 +18,7 @@ The project consists of two main parts:
 
 ## Features
 
-- [x] Conversations
+- [x] Multi-turn conversations
 - [x] Controlling the home
 - [x] Tracing
 - [x] LLM backends management
