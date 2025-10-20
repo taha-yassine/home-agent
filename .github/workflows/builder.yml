@@ -35,7 +35,9 @@ jobs:
             echo "build_arch=false" >> $GITHUB_OUTPUT;
           elif [[ "${{ steps.info.outputs.architectures }}" =~ ${{ matrix.arch }} ]]; then
             echo "build_arch=true" >> $GITHUB_OUTPUT;
-            echo "image=$(echo ${{ steps.info.outputs.image }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT;
+            image="$(echo ${{ steps.info.outputs.image }} | cut -d'/' -f3-)"
+            image_for_arch="${image//\{arch\}/${{ matrix.arch }}}"
+            echo "image=${image_for_arch}" >> $GITHUB_OUTPUT;
           else
             echo "${{ matrix.arch }} is not a valid arch for addon, skipping build";
             echo "build_arch=false" >> $GITHUB_OUTPUT;

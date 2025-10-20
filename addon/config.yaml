@@ -9,7 +9,7 @@ arch:
   - amd64
 startup: application
 boot: auto
-image: ghcr.io/taha-yassine/home-agent
+image: ghcr.io/taha-yassine/home-agent/{arch}
 homeassistant_api: true
 ports:
   8000/tcp: 8000
