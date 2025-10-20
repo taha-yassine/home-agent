@@ -1,5 +1,5 @@
 name: "Home Agent"
-version: "1.0.0"
+version: "0.1.0"
 slug: "home-agent"
 init: false
 description: "AI agent for Home Assistant"
