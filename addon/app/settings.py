@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     ha_api_key: str  # Bearer token for Home Assistant authentication
     db_path: Path
     max_turns: int = 5
-
+    docs_path: Path
     model_config = SettingsConfigDict(
         env_prefix="HOME_AGENT_",
         env_file=".env",
@@ -33,6 +33,7 @@ def get_settings() -> Settings:
             ha_api_url="http://supervisor/core/api",
             ha_api_key=os.getenv("SUPERVISOR_TOKEN"), # pyright: ignore
             db_path=Path("/data"),
+            docs_path=Path("/data/docs"),
         )
     else:
         return Settings() # pyright: ignore 

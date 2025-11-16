@@ -43,8 +43,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """
         # Startup
 
-        # DB
+        # DB and docs directories
         settings.db_path.mkdir(parents=True, exist_ok=True)
+        settings.docs_path.mkdir(parents=True, exist_ok=True)
 
         db_async_engine = create_async_engine(f"sqlite+aiosqlite:///{settings.db_path / 'home_agent.db'}")
         agent_session_engine = create_async_engine("sqlite+aiosqlite:///:memory:")
