@@ -17,6 +17,12 @@ ENV APP_ENV=prod
 
 WORKDIR /app
 
+# Install poppler-utils for PDF processing
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends poppler-utils && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 # --mount can't be used because Home Assistant doesn't support buildkit
 # RUN --mount=type=bind,source=.python-version,target=.python-version \
 #     uv python install
