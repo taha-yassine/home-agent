@@ -50,4 +50,15 @@ class Span(Base):
     parent: Mapped[Span | None] = relationship(
         "Span", remote_side=[id], back_populates="children"
     )
-    children: Mapped[List[Span]] = relationship("Span", back_populates="parent") 
+    children: Mapped[List[Span]] = relationship("Span", back_populates="parent")
+
+
+class Document(Base):
+    __tablename__ = "documents"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    folder_name: Mapped[str] = mapped_column(String, unique=True)
+    original_filename: Mapped[str] = mapped_column(String)
+    display_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    mime_type: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime) 

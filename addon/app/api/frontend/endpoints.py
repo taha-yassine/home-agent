@@ -1,5 +1,6 @@
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...dependencies import get_db
@@ -11,13 +12,17 @@ from ...models import (
     Span,
     ConversationNeighbors,
     ConversationTracesResponse,
+    Document,
 )
 from ...services import (
     ConversationService,
     ConnectionService,
     TraceService,
     ToolService,
+    DocumentService,
 )
+from ...settings import get_settings
+from ...services.document import get_document_folder
 
 router = APIRouter()
 
@@ -150,3 +155,63 @@ async def get_models(db: AsyncSession = Depends(get_db)):
 async def get_tools():
     """Get all tools."""
     return ToolService.get_tools()
+
+
+@router.post("/documents", response_model=Document)
+async def create_document(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload a new document."""
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    
+    settings = get_settings()
+    return await DocumentService.ingest_document(file, db, settings)
+
+
+@router.get("/documents", response_model=list[Document])
+async def get_documents(db: AsyncSession = Depends(get_db)) -> list[Document]:
+    """Get all documents."""
+    return await DocumentService.get_documents(db)
+
+
+@router.get("/documents/{document_id}", response_model=Document)
+async def get_document(
+    document_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> Document:
+    """Get a document by ID."""
+    document = await DocumentService.get_document(db, document_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return document
+
+
+@router.delete("/documents/{document_id}", status_code=204)
+async def delete_document(
+    document_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Delete a document."""
+    settings = get_settings()
+    await DocumentService.delete_document(db, document_id, settings)
+
+
+@router.get("/documents/{document_id}/thumbnail")
+async def get_document_thumbnail(
+    document_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """Get a document's thumbnail."""
+    document = await DocumentService.get_document(db, document_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    settings = get_settings()
+    thumbnail_path = get_document_folder(settings, document.folder_name) / "thumbnail.png"
+    
+    if not thumbnail_path.exists():
+        raise HTTPException(status_code=404, detail="Thumbnail not found")
+    
+    return FileResponse(thumbnail_path, media_type="image/png")
