@@ -31,6 +31,7 @@ name = "addon"
 version = "0.1.0"
 source = { editable = "addon" }
 dependencies = [
+    { name = "alembic" },
     { name = "arize-phoenix" },
     { name = "arize-phoenix-otel" },
     { name = "fastapi" },
@@ -60,6 +61,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "alembic", specifier = ">=1.17.2" },
     { name = "arize-phoenix", specifier = ">=8.13.0" },
     { name = "arize-phoenix-otel", specifier = ">=0.8.0" },
     { name = "fastapi", specifier = ">=0.104.0" },

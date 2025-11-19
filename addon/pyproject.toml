@@ -21,6 +21,7 @@ dependencies = [
     "pypdf>=5.0.0",
     "pdf2image>=1.17.0",
     "pillow>=11.0.0",
+    "alembic>=1.17.2",
 ]
 
 [dependency-groups]

@@ -14,6 +14,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from openai import AsyncOpenAI
 from starlette.middleware.base import BaseHTTPMiddleware
+from alembic import command
+from alembic.config import Config
 
 from .tools import get_all_tools
 from .api import router as api_router
@@ -47,12 +49,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         settings.db_path.mkdir(parents=True, exist_ok=True)
         settings.docs_path.mkdir(parents=True, exist_ok=True)
 
+        # Run database migrations
+        alembic_cfg = Config(str(Path(__file__).parent.parent / "alembic.ini"))
+        alembic_cfg.set_main_option("sqlalchemy.url", f"sqlite:///{settings.db_path / 'home_agent.db'}")
+        command.upgrade(alembic_cfg, "head")
+
         db_async_engine = create_async_engine(f"sqlite+aiosqlite:///{settings.db_path / 'home_agent.db'}")
         agent_session_engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         async_session = async_sessionmaker(bind=db_async_engine, expire_on_commit=False)
-
-        async with db_async_engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
 
         # For use with sync trace exporter
         # May need better handling
