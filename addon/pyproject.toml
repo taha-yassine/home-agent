@@ -18,6 +18,9 @@ dependencies = [
     "pydantic-settings==2.7.1",
     "sqlalchemy>=2.0.39",
     "uvicorn>=0.24.0",
+    "pypdf>=5.0.0",
+    "pdf2image>=1.17.0",
+    "pillow>=11.0.0",
 ]
 
 [dependency-groups]
