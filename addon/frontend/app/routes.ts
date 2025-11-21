@@ -4,10 +4,11 @@ const children = [
   index("routes/index.tsx"),
   route("tools", "routes/tools.tsx"),
   route("documents", "routes/documents.tsx"),
-  route("connections", "routes/connections/layout.tsx", [
-    index("routes/connections/index.tsx"),
-    route("llm", "routes/connections/llm.tsx"),
-    route("mcp", "routes/connections/mcp.tsx"),
+  route("settings", "routes/settings/layout.tsx", [
+    index("routes/settings/index.tsx"),
+    route("backends", "routes/settings/backends.tsx"),
+    route("mcp", "routes/settings/mcp.tsx"),
+    route("models", "routes/settings/models.tsx"),
   ]),
   route("conversations", "routes/conversations/layout.tsx", [
     index("routes/conversations/index.tsx"),

@@ -30,9 +30,10 @@ from ..models import (
     ConversationList,
     ConversationRequest,
     ConversationResponse,
-    Connection,
+    Backend,
 )
-from .connection import ConnectionService
+from .backend import BackendService
+from .model_config import ModelConfigService
 from ..tracing import HASpanExporter
 from ..settings import get_settings
 
@@ -177,10 +178,15 @@ class ConversationService:
         """Process a conversation with the agent."""
         set_trace_processors([BatchTraceProcessor(exporter=HASpanExporter(db_engine))])
 
-        active_connection: Connection | None = await ConnectionService.get_active_connection(db, mask_key=False)
-
-        if not active_connection:
-            yield "No active connection found. Please configure a connection."
+        # Get the backend configured for the 'main' role
+        main_config = await ModelConfigService.get_model_config(db, "main")
+        if not main_config:
+            yield "No model configuration found for 'main' role. Please configure a backend and model in Settings."
+            return
+        
+        backend = await BackendService.get_backend(db, main_config.backend_id, mask_key=False)
+        if not backend:
+            yield f"Backend {main_config.backend_id} configured for 'main' role not found."
             return
         
         def instructions(ctx_wrapper: RunContextWrapper[Any], agent: Agent | None) -> str:
@@ -188,13 +194,13 @@ class ConversationService:
 
         # We're constrained to creating a new httpx client for each connection because the base_url can't be changed at runtime
         async with AsyncOpenAI(
-            base_url=active_connection.url,
-            api_key=active_connection.api_key,
+            base_url=backend.url,
+            api_key=backend.api_key,
         ) as openai_client:
             agent = Agent(
                 name="Home Agent",
                 model=OpenAIChatCompletionsModel(
-                    model=active_connection.model or "generic",
+                    model=main_config.model or "generic",
                     openai_client=openai_client,
                 ),
                 instructions=instructions,

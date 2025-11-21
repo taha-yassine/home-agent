@@ -3,21 +3,20 @@ from __future__ import annotations
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String, Boolean
+from sqlalchemy import JSON, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 
 
-class Connection(Base):
-    __tablename__ = "connections"
+class Backend(Base):
+    __tablename__ = "backends"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
     url: Mapped[str] = mapped_column(String)
     api_key: Mapped[str | None] = mapped_column(String, nullable=True)
-    backend: Mapped[str] = mapped_column(String)
-    model: Mapped[str | None] = mapped_column(String, nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=False)
+    type: Mapped[str] = mapped_column(String)
 
 
 class Trace(Base):
@@ -61,4 +60,12 @@ class Document(Base):
     original_filename: Mapped[str] = mapped_column(String)
     display_name: Mapped[str | None] = mapped_column(String, nullable=True)
     mime_type: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime] = mapped_column(DateTime) 
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class ModelConfig(Base):
+    __tablename__ = "model_configs"
+
+    role: Mapped[str] = mapped_column(String, primary_key=True)
+    backend_id: Mapped[int] = mapped_column(ForeignKey("backends.id"), nullable=False)
+    model: Mapped[str] = mapped_column(String, nullable=False) 

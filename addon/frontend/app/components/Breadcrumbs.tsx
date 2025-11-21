@@ -5,7 +5,7 @@ import { useIngressBasePath } from "../hooks/useIngressBase";
 export default function Breadcrumbs() {
   const location = useLocation();
   // Minimal overrides to map acronym slugs to display labels while keeping URLs lowercase (e.g., "llm" -> "LLM").
-  const LABEL_OVERRIDES: Record<string, string> = { llm: "LLM", mcp: "MCP" };
+  const LABEL_OVERRIDES: Record<string, string> = { llm: "LLM", mcp: "MCP", backends: "Backends" };
   const pathnameBase = useIngressBasePath();
   // Strip the ingress base from the current pathname to compute breadcrumb parts.
   const relativePathname =

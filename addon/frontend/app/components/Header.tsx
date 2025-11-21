@@ -16,10 +16,11 @@ const navItems: NavItem[] = [
   { name: "Tools", href: "tools" },
   { name: "Documents", href: "documents" },
   {
-    name: "Connections",
+    name: "Settings",
     children: [
-      { name: "LLM", href: "connections/llm" },
-      { name: "MCP", href: "connections/mcp" },
+      { name: "Backends", href: "settings/backends" },
+      { name: "MCP", href: "settings/mcp" },
+      { name: "Models", href: "settings/models" },
     ],
   },
   { name: "Usage", href: "usage" },

@@ -1,8 +1,9 @@
-from .models import Span, Trace, Connection, Document
+from .models import Span, Trace, Backend, Document, ModelConfig
 
 __all__ = [
     "Span",
     "Trace",
-    "Connection",
+    "Backend",
     "Document",
+    "ModelConfig",
 ]

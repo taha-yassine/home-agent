@@ -1,14 +1,9 @@
-import { useEffect, useState, Fragment } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogBackdrop,
   DialogPanel,
   DialogTitle,
-  Combobox,
-  ComboboxButton,
-  ComboboxInput,
-  ComboboxOptions,
-  ComboboxOption,
   Fieldset,
   Field,
   Label,
@@ -22,24 +17,19 @@ import {
   MenuItem,
   MenuItems,
 } from "@headlessui/react";
-import { Check, ChevronDown, MoreVertical, Trash2, AlertCircle } from "lucide-react";
+import { Check, ChevronDown, MoreVertical, Trash2 } from "lucide-react";
 import Loading from "../../components/Loading";
 import Breadcrumbs from "../../components/Breadcrumbs";
 
-interface Connection {
+interface Backend {
   id: number;
+  name: string | null;
   url: string;
   api_key: string | null;
-  backend: string;
-  model: string | null;
-  is_active: boolean;
+  type: string;
 }
 
-interface Model {
-  id: string;
-}
-
-const backendOptions = [
+const backendTypes = [
   { id: "vllm", name: "vLLM" },
   { id: "llama.cpp", name: "llama.cpp" },
   { id: "sglang", name: "SGLang" },
@@ -47,43 +37,30 @@ const backendOptions = [
   { id: "openai", name: "OpenAI-compatible" },
 ];
 
-export default function ConnectionsLlm() {
-  const [connections, setConnections] = useState<Connection[]>([]);
+export default function SettingsBackends() {
+  const [backends, setBackends] = useState<Backend[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedConnection, setSelectedConnection] = useState<Connection | null>(
-    null
-  );
-  const [newConnection, setNewConnection] = useState({
+  const [newBackend, setNewBackend] = useState({
+    name: "",
     url: "",
     api_key: "",
-    backend: "vllm",
+    type: "vllm",
   });
-  const [models, setModels] = useState<Model[]>([]);
-  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
-  const [isAddConnectionOpen, setIsAddConnectionOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [modelsError, setModelsError] = useState<string | null>(null);
+  const [isAddBackendOpen, setIsAddBackendOpen] = useState(false);
 
   const inputClasses =
     "mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-sm/6 ring-1 ring-inset ring-zinc-300 dark:ring-zinc-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-zinc-500";
 
-  async function fetchConnections() {
+  async function fetchBackends() {
     try {
       setLoading(true);
-      const response = await fetch("api/frontend/connections");
+      const response = await fetch("api/frontend/backends");
       if (!response.ok) {
-        throw new Error("Failed to fetch connections");
+        throw new Error("Failed to fetch backends");
       }
       const data = await response.json();
-      setConnections(data);
-      const activeConnection = data.find((c: Connection) => c.is_active);
-      if (activeConnection) {
-        setSelectedConnection(activeConnection);
-        if (activeConnection.model) {
-          setSelectedModel({ id: activeConnection.model });
-        }
-      }
+      setBackends(data);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -95,111 +72,19 @@ export default function ConnectionsLlm() {
     }
   }
 
-  async function fetchModels() {
-    if (!selectedConnection) return;
-    try {
-      setModelsError(null);
-      const response = await fetch("api/frontend/models");
-      if (!response.ok) {
-        throw new Error("Failed to fetch models");
-      }
-      const data = await response.json();
-      setModels(data.data);
-      setModelsError(null);
-    } catch (err) {
-      if (err instanceof Error) {
-        setModelsError(err.message);
-      } else {
-        setModelsError("An unknown error occurred");
-      }
-    }
-  }
-
   useEffect(() => {
-    fetchConnections();
+    fetchBackends();
   }, []);
 
-  useEffect(() => {
-    if (selectedConnection) {
-      fetchModels();
-      if (selectedConnection.model) {
-        setSelectedModel({ id: selectedConnection.model });
-      } else {
-        setSelectedModel(null);
-      }
-    }
-  }, [selectedConnection]);
-
-  const filteredModels =
-    query === ""
-      ? models
-      : models.filter((model) => {
-          return model.id.toLowerCase().includes(query.toLowerCase());
-        });
-
-  const handleModelChange = (value: Model | string | null) => {
-    let modelId: string;
-    if (typeof value === "string") {
-      modelId = value;
-      setSelectedModel({ id: modelId });
-    } else if (value) {
-      modelId = value.id;
-      setSelectedModel(value);
-    } else {
-      setSelectedModel(null);
-      return;
-    }
-    handleSaveModel(modelId);
-  };
-
-  const handleSetActive = async (connection: Connection) => {
+  const handleDeleteBackend = async (backendId: number) => {
     try {
-      const response = await fetch(`api/frontend/connections/${connection.id}/active`, {
-        method: "PUT",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to set active connection");
-      }
-      await fetchConnections();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unknown error occurred");
-      }
-    }
-  };
-
-  const handleSaveModel = async (modelId: string) => {
-    if (!selectedConnection) return;
-    try {
-      const response = await fetch(`api/frontend/connections/${selectedConnection.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: modelId }),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to save model");
-      }
-      await fetchConnections();
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unknown error occurred");
-      }
-    }
-  };
-
-  const handleDeleteConnection = async (connectionId: number) => {
-    try {
-      const response = await fetch(`api/frontend/connections/${connectionId}`, {
+      const response = await fetch(`api/frontend/backends/${backendId}`, {
         method: "DELETE",
       });
       if (!response.ok) {
-        throw new Error("Failed to delete connection");
+        throw new Error("Failed to delete backend");
       }
-      await fetchConnections();
+      await fetchBackends();
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -209,20 +94,20 @@ export default function ConnectionsLlm() {
     }
   };
 
-  const handleCreateConnection = async (e: React.FormEvent) => {
+  const handleCreateBackend = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch("api/frontend/connections", {
+      const response = await fetch("api/frontend/backends", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newConnection),
+        body: JSON.stringify(newBackend),
       });
       if (!response.ok) {
-        throw new Error("Failed to create connection");
+        throw new Error("Failed to create backend");
       }
-      setNewConnection({ url: "", api_key: "", backend: "vllm" });
-      await fetchConnections();
-      setIsAddConnectionOpen(false);
+      setNewBackend({ name: "", url: "", api_key: "", type: "vllm" });
+      await fetchBackends();
+      setIsAddBackendOpen(false);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -245,29 +130,27 @@ export default function ConnectionsLlm() {
       <div className="flex justify-between items-center mb-4 min-h-10">
         <Breadcrumbs />
         <button
-          onClick={() => setIsAddConnectionOpen(true)}
+          onClick={() => setIsAddBackendOpen(true)}
           className="cursor-pointer inline-flex justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:focus:ring-zinc-700 dark:focus:ring-offset-zinc-950"
         >
-          Add Connection
+          Add Backend
         </button>
       </div>
-      {/* TODO: Find a way to reconcile overflow-hidden and the dropdown menu */}
       <div className="overflow-hidden border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
         <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
           <thead className="bg-zinc-50 dark:bg-zinc-900">
             <tr>
-              <th scope="col" className="w-12"></th>
               <th
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider"
               >
-                Backend
+                Name
               </th>
               <th
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider"
               >
-                Model
+                Type
               </th>
               <th
                 scope="col"
@@ -287,81 +170,20 @@ export default function ConnectionsLlm() {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
-            {connections.map((connection) => (
-              <tr key={connection.id}>
-                <td className="pl-4 py-4">
-                  <input
-                    type="radio"
-                    name="active_connection"
-                    checked={connection.is_active}
-                    onChange={() => handleSetActive(connection)}
-                    className="cursor-pointer h-4 w-4 border-zinc-300 bg-zinc-100 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-700 dark:focus:ring-offset-zinc-950"
-                  />
+            {backends.map((backend) => (
+              <tr key={backend.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
+                  {backend.name || "Unnamed"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
-                  {backendOptions.find((b) => b.id === connection.backend)
-                    ?.name || connection.backend}
+                  {backendTypes.find((type) => type.id === backend.type)
+                    ?.name || backend.type}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
-                  {connection.is_active ? (
-                    modelsError ? (
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" aria-hidden="true" />
-                        <span className="text-sm text-red-600 dark:text-red-400">{modelsError}</span>
-                      </div>
-                    ) : (
-                      <Combobox
-                        as="div"
-                        value={selectedModel}
-                        onChange={handleModelChange}
-                        onClose={() => setQuery("")}
-                      >
-                        <div className="relative">
-                          <ComboboxInput
-                            className="w-full rounded-md border-0 bg-white dark:bg-zinc-950 py-1.5 pl-3 pr-10 text-zinc-900 dark:text-zinc-100 ring-1 ring-inset ring-zinc-300 dark:ring-zinc-700 focus:outline-none sm:text-sm sm:leading-6"
-                            onChange={(event) => setQuery(event.target.value)}
-                            displayValue={(model: Model) => model?.id || ""}
-                          />
-                          <ComboboxButton className="cursor-pointer group absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
-                            <ChevronDown
-                              className="h-5 w-5 text-zinc-400 group-data-hover:text-zinc-600"
-                              aria-hidden="true"
-                            />
-                          </ComboboxButton>
-                        </div>
-
-                        <ComboboxOptions
-                          transition
-                          anchor="bottom"
-                          className="w-[var(--input-width)] z-10 mt-1 !max-h-60 overflow-auto rounded-md bg-white dark:bg-zinc-900 p-1 text-base shadow-lg ring-1 ring-zinc-300 dark:ring-zinc-700 focus:outline-none sm:text-sm empty:invisible transition duration-100 ease-in data-leave:data-closed:opacity-0 [--anchor-gap:theme(spacing.1)]"
-                        >
-                          {filteredModels.map((model) => (
-                            <ComboboxOption
-                              key={model.id}
-                              value={model}
-                              className="group flex cursor-pointer items-center gap-2 rounded-md py-1.5 px-3 select-none data-focus:bg-zinc-100 dark:data-focus:bg-zinc-800"
-                            >
-                              <Check
-                                className="invisible size-4 text-zinc-600 dark:text-zinc-300 group-data-selected:visible"
-                                aria-hidden="true"
-                              />
-                              <span className="text-sm text-zinc-900 dark:text-zinc-100">
-                                {model.id}
-                              </span>
-                            </ComboboxOption>
-                          ))}
-                        </ComboboxOptions>
-                      </Combobox>
-                    )
-                  ) : (
-                    <span>{connection.model || "N/A"}</span>
-                  )}
+                  {backend.url}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
-                  {connection.url}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
-                  {connection.api_key}
+                  {backend.api_key}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <Menu as="div" className="relative inline-block text-left">
@@ -378,7 +200,7 @@ export default function ConnectionsLlm() {
                       <div className="px-1 py-1">
                         <MenuItem>
                           <button
-                            onClick={() => handleDeleteConnection(connection.id)}
+                            onClick={() => handleDeleteBackend(backend.id)}
                             className="group flex w-full items-center rounded-md px-2 py-2 text-sm cursor-pointer text-red-700 dark:text-red-400 data-[focus]:bg-zinc-100 dark:data-[focus]:bg-zinc-800 data-[focus]:text-red-900 dark:data-[focus]:text-red-200"
                           >
                             <Trash2 className="mr-2 h-5 w-5" aria-hidden="true" />
@@ -396,10 +218,10 @@ export default function ConnectionsLlm() {
       </div>
 
       <Dialog
-        open={isAddConnectionOpen}
+        open={isAddBackendOpen}
         as="div"
         className="relative z-50"
-        onClose={() => setIsAddConnectionOpen(false)}
+        onClose={() => setIsAddBackendOpen(false)}
       >
         <DialogBackdrop
           transition
@@ -415,13 +237,34 @@ export default function ConnectionsLlm() {
                 as="h3"
                 className="text-lg font-medium leading-6 text-zinc-900 dark:text-zinc-100"
               >
-                Add New Connection
+                Add New Backend
               </DialogTitle>
               <form
-                onSubmit={handleCreateConnection}
+                onSubmit={handleCreateBackend}
                 className="mt-4"
               >
                 <Fieldset className="space-y-4">
+                  <Field>
+                    <Label
+                      htmlFor="name"
+                      className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                    >
+                      Name
+                    </Label>
+                    <Input
+                      type="text"
+                      id="name"
+                      value={newBackend.name}
+                      onChange={(e) =>
+                        setNewBackend({
+                          ...newBackend,
+                          name: e.target.value,
+                        })
+                      }
+                      className={inputClasses}
+                      placeholder="My Backend"
+                    />
+                  </Field>
                   <Field>
                     <Label
                       htmlFor="url"
@@ -432,10 +275,10 @@ export default function ConnectionsLlm() {
                     <Input
                       type="url"
                       id="url"
-                      value={newConnection.url}
+                      value={newBackend.url}
                       onChange={(e) =>
-                        setNewConnection({
-                          ...newConnection,
+                        setNewBackend({
+                          ...newBackend,
                           url: e.target.value,
                         })
                       }
@@ -453,10 +296,10 @@ export default function ConnectionsLlm() {
                     <Input
                       type="password"
                       id="api_key"
-                      value={newConnection.api_key}
+                      value={newBackend.api_key}
                       onChange={(e) =>
-                        setNewConnection({
-                          ...newConnection,
+                        setNewBackend({
+                          ...newBackend,
                           api_key: e.target.value,
                         })
                       }
@@ -465,15 +308,15 @@ export default function ConnectionsLlm() {
                   </Field>
                   <Field>
                     <Label
-                      htmlFor="backend"
+                      htmlFor="type"
                       className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
                     >
-                      Backend
+                      Backend Type
                     </Label>
                     <Listbox
-                      value={newConnection.backend}
+                      value={newBackend.type}
                       onChange={(value) =>
-                        setNewConnection({ ...newConnection, backend: value })
+                        setNewBackend({ ...newBackend, type: value })
                       }
                     >
                       <ListboxButton
@@ -483,9 +326,7 @@ export default function ConnectionsLlm() {
                       >
                         <span className="block truncate">
                           {
-                            backendOptions.find(
-                              (o) => o.id === newConnection.backend
-                            )?.name
+                            backendTypes.find((type) => type.id === newBackend.type)?.name
                           }
                         </span>
                         <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
@@ -500,10 +341,10 @@ export default function ConnectionsLlm() {
                         anchor="bottom"
                         className="z-10 mt-1 w-[var(--button-width)] !max-h-60 overflow-auto rounded-md bg-white dark:bg-zinc-900 p-1 text-base shadow-lg ring-1 ring-zinc-300 dark:ring-zinc-700 focus:outline-none sm:text-sm empty:invisible transition duration-100 ease-in data-leave:data-closed:opacity-0 [--anchor-gap:theme(spacing.1)]"
                       >
-                        {backendOptions.map((option) => (
+                        {backendTypes.map((type) => (
                           <ListboxOption
-                            key={option.id}
-                            value={option.id}
+                            key={type.id}
+                            value={type.id}
                             className="group flex cursor-pointer items-center gap-2 rounded-md py-1.5 px-3 select-none data-focus:bg-zinc-100 dark:data-focus:bg-zinc-800"
                           >
                             <Check
@@ -511,7 +352,7 @@ export default function ConnectionsLlm() {
                               aria-hidden="true"
                             />
                             <span className="text-sm/6 text-zinc-900 dark:text-zinc-100">
-                              {option.name}
+                              {type.name}
                             </span>
                           </ListboxOption>
                         ))}
@@ -523,7 +364,7 @@ export default function ConnectionsLlm() {
                   <button
                     type="button"
                     className="cursor-pointer inline-flex justify-center rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2"
-                    onClick={() => setIsAddConnectionOpen(false)}
+                    onClick={() => setIsAddBackendOpen(false)}
                   >
                     Cancel
                   </button>
@@ -531,7 +372,7 @@ export default function ConnectionsLlm() {
                     type="submit"
                     className="cursor-pointer inline-flex justify-center rounded-md border border-transparent bg-zinc-800 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-zinc-300"
                   >
-                    Add Connection
+                    Add Backend
                   </button>
                 </div>
               </form>
@@ -541,4 +382,5 @@ export default function ConnectionsLlm() {
       </Dialog>
     </>
   );
-} 
+}
+
